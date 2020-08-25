@@ -1,4 +1,3 @@
-use crate::engine::shaders;
 use winit::{event::*, window::Window};
 
 pub struct State {
@@ -56,65 +55,6 @@ impl State {
       render_pipelines: vec![],
       size,
     }
-  }
-
-  pub fn create_pipeline(&mut self) {
-    let vs_module = shaders::load_vertex_shader(
-      &self.device,
-      include_str!("../shaders/shader.vert"),
-      "shader.vert",
-    );
-
-    let fs_module = shaders::load_fragment_shader(
-      &self.device,
-      include_str!("../shaders/shader.frag"),
-      "shader.frag",
-    );
-
-    let render_pipeline_layout =
-      self
-        .device
-        .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-          bind_group_layouts: &[],
-        });
-
-    let render_pipeline = self
-      .device
-      .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-        layout: &render_pipeline_layout,
-        vertex_stage: wgpu::ProgrammableStageDescriptor {
-          module: &vs_module,
-          entry_point: "main",
-        },
-        fragment_stage: Some(wgpu::ProgrammableStageDescriptor {
-          module: &fs_module,
-          entry_point: "main",
-        }),
-        rasterization_state: Some(wgpu::RasterizationStateDescriptor {
-          front_face: wgpu::FrontFace::Ccw,
-          cull_mode: wgpu::CullMode::Back,
-          depth_bias: 0,
-          depth_bias_slope_scale: 0.0,
-          depth_bias_clamp: 0.0,
-        }),
-        color_states: &[wgpu::ColorStateDescriptor {
-          format: self.sc_desc.format,
-          color_blend: wgpu::BlendDescriptor::REPLACE,
-          alpha_blend: wgpu::BlendDescriptor::REPLACE,
-          write_mask: wgpu::ColorWrite::ALL,
-        }],
-        primitive_topology: wgpu::PrimitiveTopology::TriangleList,
-        depth_stencil_state: None,
-        vertex_state: wgpu::VertexStateDescriptor {
-          index_format: wgpu::IndexFormat::Uint16,
-          vertex_buffers: &[],
-        },
-        sample_count: 1,
-        sample_mask: !0,
-        alpha_to_coverage_enabled: false,
-      });
-
-    self.render_pipelines.push(render_pipeline);
   }
 
   pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {

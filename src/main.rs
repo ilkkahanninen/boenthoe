@@ -1,6 +1,6 @@
 mod engine;
 
-use engine::state::State;
+use engine::{pipeline::PipelineBuilder, state::State};
 use futures::executor::block_on;
 use winit::{
     event::*,
@@ -14,7 +14,11 @@ fn main() {
 
     // Since main can't be async, we're going to need to block
     let mut state = block_on(State::new(&window));
-    state.create_pipeline();
+
+    PipelineBuilder::new(&mut state)
+        .vertex_shader(include_str!("shaders/shader.vert"), "shader.vert")
+        .fragment_shader(include_str!("shaders/shader.frag"), "shader.frag")
+        .build();
 
     event_loop.run(move |event, _, control_flow| match event {
         Event::WindowEvent {
