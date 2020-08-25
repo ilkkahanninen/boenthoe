@@ -1,3 +1,4 @@
+use crate::engine::shaders;
 use winit::{event::*, window::Window};
 
 pub struct State {
@@ -58,34 +59,17 @@ impl State {
   }
 
   pub fn create_pipeline(&mut self) {
-    let vs_src = include_str!("../shaders/shader.vert");
-    let fs_src = include_str!("../shaders/shader.frag");
+    let vs_module = shaders::load_vertex_shader(
+      &self.device,
+      include_str!("../shaders/shader.vert"),
+      "shader.vert",
+    );
 
-    let mut compiler = shaderc::Compiler::new().unwrap();
-    let vs_spirv = compiler
-      .compile_into_spirv(
-        vs_src,
-        shaderc::ShaderKind::Vertex,
-        "shader.vert",
-        "main",
-        None,
-      )
-      .unwrap();
-    let fs_spirv = compiler
-      .compile_into_spirv(
-        fs_src,
-        shaderc::ShaderKind::Fragment,
-        "shader.frag",
-        "main",
-        None,
-      )
-      .unwrap();
-
-    let vs_data = wgpu::read_spirv(std::io::Cursor::new(vs_spirv.as_binary_u8())).unwrap();
-    let fs_data = wgpu::read_spirv(std::io::Cursor::new(fs_spirv.as_binary_u8())).unwrap();
-
-    let vs_module = self.device.create_shader_module(&vs_data);
-    let fs_module = self.device.create_shader_module(&fs_data);
+    let fs_module = shaders::load_fragment_shader(
+      &self.device,
+      include_str!("../shaders/shader.frag"),
+      "shader.frag",
+    );
 
     let render_pipeline_layout =
       self
@@ -100,10 +84,9 @@ impl State {
         layout: &render_pipeline_layout,
         vertex_stage: wgpu::ProgrammableStageDescriptor {
           module: &vs_module,
-          entry_point: "main", // 1.
+          entry_point: "main",
         },
         fragment_stage: Some(wgpu::ProgrammableStageDescriptor {
-          // 2.
           module: &fs_module,
           entry_point: "main",
         }),
@@ -120,15 +103,15 @@ impl State {
           alpha_blend: wgpu::BlendDescriptor::REPLACE,
           write_mask: wgpu::ColorWrite::ALL,
         }],
-        primitive_topology: wgpu::PrimitiveTopology::TriangleList, // 1.
-        depth_stencil_state: None,                                 // 2.
+        primitive_topology: wgpu::PrimitiveTopology::TriangleList,
+        depth_stencil_state: None,
         vertex_state: wgpu::VertexStateDescriptor {
-          index_format: wgpu::IndexFormat::Uint16, // 3.
-          vertex_buffers: &[],                     // 4.
+          index_format: wgpu::IndexFormat::Uint16,
+          vertex_buffers: &[],
         },
-        sample_count: 1,                  // 5.
-        sample_mask: !0,                  // 6.
-        alpha_to_coverage_enabled: false, // 7.
+        sample_count: 1,
+        sample_mask: !0,
+        alpha_to_coverage_enabled: false,
       });
 
     self.render_pipelines.push(render_pipeline);
