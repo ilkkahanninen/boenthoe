@@ -18,6 +18,26 @@ fn main() {
     PipelineBuilder::new(&mut state)
         .vertex_shader(include_str!("shaders/shader.vert"), "shader.vert")
         .fragment_shader(include_str!("shaders/shader.frag"), "shader.frag")
+        .render(Box::new(|a| {
+            let mut render_pass = a.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                    attachment: a.target,
+                    resolve_target: None,
+                    load_op: wgpu::LoadOp::Clear,
+                    store_op: wgpu::StoreOp::Store,
+                    clear_color: wgpu::Color {
+                        r: 0.9,
+                        g: 0.7,
+                        b: 0.1,
+                        a: 1.0,
+                    },
+                }],
+                depth_stencil_attachment: None,
+            });
+
+            render_pass.set_pipeline(&a.pipeline);
+            render_pass.draw(0..3, 0..1);
+        }))
         .build();
 
     event_loop.run(move |event, _, control_flow| match event {

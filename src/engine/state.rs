@@ -7,8 +7,19 @@ pub struct State {
   pub queue: wgpu::Queue,
   pub sc_desc: wgpu::SwapChainDescriptor,
   pub swap_chain: wgpu::SwapChain,
-  pub render_pipelines: Vec<wgpu::RenderPipeline>,
+  pub rendering_contexts: Vec<RenderingContext>,
   pub size: winit::dpi::PhysicalSize<u32>,
+}
+
+pub struct RenderingContext {
+  pub pipeline: wgpu::RenderPipeline,
+  pub render: Box<dyn Fn(RenderArgs) -> ()>,
+}
+
+pub struct RenderArgs<'a> {
+  pub target: &'a wgpu::TextureView,
+  pub encoder: &'a mut wgpu::CommandEncoder,
+  pub pipeline: &'a wgpu::RenderPipeline,
 }
 
 impl State {
@@ -52,7 +63,7 @@ impl State {
       queue,
       sc_desc,
       swap_chain,
-      render_pipelines: vec![],
+      rendering_contexts: vec![],
       size,
     }
   }
@@ -85,25 +96,12 @@ impl State {
         label: Some("Render Encoder"),
       });
 
-    for pipeline in self.render_pipelines.iter() {
-      let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-        color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-          attachment: &frame.view, // what texture to save the colors to
-          resolve_target: None,
-          load_op: wgpu::LoadOp::Clear,
-          store_op: wgpu::StoreOp::Store,
-          clear_color: wgpu::Color {
-            r: 0.9,
-            g: 0.7,
-            b: 0.1,
-            a: 1.0,
-          },
-        }],
-        depth_stencil_attachment: None,
+    for ctx in self.rendering_contexts.iter() {
+      (ctx.render)(RenderArgs {
+        target: &frame.view,
+        encoder: &mut encoder,
+        pipeline: &ctx.pipeline,
       });
-
-      render_pass.set_pipeline(pipeline);
-      render_pass.draw(0..3, 0..1);
     }
 
     self.queue.submit(&[encoder.finish()]);

@@ -4,6 +4,7 @@ pub struct PipelineBuilder<'a> {
   state: &'a mut state::State,
   vertex_shader: Option<wgpu::ShaderModule>,
   fragment_shader: Option<wgpu::ShaderModule>,
+  render: Option<Box<dyn Fn(state::RenderArgs) -> ()>>,
 }
 
 impl<'a> PipelineBuilder<'a> {
@@ -12,6 +13,7 @@ impl<'a> PipelineBuilder<'a> {
       state,
       vertex_shader: None,
       fragment_shader: None,
+      render: None,
     }
   }
 
@@ -33,11 +35,17 @@ impl<'a> PipelineBuilder<'a> {
     self
   }
 
+  pub fn render(mut self, render_fn: Box<dyn Fn(state::RenderArgs) -> ()>) -> Self {
+    self.render = Some(render_fn);
+    self
+  }
+
   pub fn build(self) -> Self {
     let PipelineBuilder {
       state,
       vertex_shader,
       fragment_shader,
+      render,
     } = self;
 
     let render_pipeline_layout =
@@ -96,7 +104,10 @@ impl<'a> PipelineBuilder<'a> {
         alpha_to_coverage_enabled: false,
       });
 
-    state.render_pipelines.push(render_pipeline);
+    state.rendering_contexts.push(state::RenderingContext {
+      pipeline: render_pipeline,
+      render: render.expect("Rendering function is not defined"),
+    });
 
     PipelineBuilder::new(state)
   }
