@@ -8,6 +8,53 @@ use winit::{
     window::WindowBuilder,
 };
 
+#[repr(C)]
+#[derive(Copy, Clone, Debug)]
+pub struct Vertex {
+    position: [f32; 3],
+    color: [f32; 3],
+}
+
+impl Vertex {
+    fn desc<'a>() -> wgpu::VertexBufferDescriptor<'a> {
+        use std::mem;
+        wgpu::VertexBufferDescriptor {
+            stride: mem::size_of::<Vertex>() as wgpu::BufferAddress,
+            step_mode: wgpu::InputStepMode::Vertex,
+            attributes: &[
+                wgpu::VertexAttributeDescriptor {
+                    offset: 0,
+                    shader_location: 0,
+                    format: wgpu::VertexFormat::Float3,
+                },
+                wgpu::VertexAttributeDescriptor {
+                    offset: mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
+                    shader_location: 1,
+                    format: wgpu::VertexFormat::Float3,
+                },
+            ],
+        }
+    }
+}
+
+unsafe impl bytemuck::Pod for Vertex {}
+unsafe impl bytemuck::Zeroable for Vertex {}
+
+const VERTICES: &[Vertex] = &[
+    Vertex {
+        position: [0.0, 0.5, 0.0],
+        color: [1.0, 0.0, 0.0],
+    },
+    Vertex {
+        position: [-0.5, -0.5, 0.0],
+        color: [0.0, 1.0, 0.0],
+    },
+    Vertex {
+        position: [0.5, -0.5, 0.0],
+        color: [0.0, 0.0, 1.0],
+    },
+];
+
 fn main() {
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new().build(&event_loop).unwrap();
@@ -15,10 +62,15 @@ fn main() {
     // Since main can't be async, we're going to need to block
     let mut state = block_on(State::new(&window));
 
+    let buffer = state
+        .device
+        .create_buffer_with_data(bytemuck::cast_slice(VERTICES), wgpu::BufferUsage::VERTEX);
+
     PipelineBuilder::new(&mut state)
         .vertex_shader(include_str!("shaders/shader.vert"), "shader.vert")
         .fragment_shader(include_str!("shaders/shader.frag"), "shader.frag")
-        .render(Box::new(|a| {
+        .describe_vertex_buffer(Vertex::desc())
+        .render(Box::new(move |a| {
             let mut render_pass = a.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                     attachment: a.target,
@@ -36,7 +88,8 @@ fn main() {
             });
 
             render_pass.set_pipeline(&a.pipeline);
-            render_pass.draw(0..3, 0..1);
+            render_pass.set_vertex_buffer(0, &buffer, 0, 0);
+            render_pass.draw(0..(VERTICES.len() as u32), 0..1);
         }))
         .build();
 

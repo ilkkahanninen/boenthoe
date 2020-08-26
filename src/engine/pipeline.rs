@@ -4,6 +4,7 @@ pub struct PipelineBuilder<'a> {
   state: &'a mut state::State,
   vertex_shader: Option<wgpu::ShaderModule>,
   fragment_shader: Option<wgpu::ShaderModule>,
+  vertex_buffer_descriptors: Vec<wgpu::VertexBufferDescriptor<'a>>,
   render: Option<Box<dyn Fn(state::RenderArgs) -> ()>>,
 }
 
@@ -13,6 +14,7 @@ impl<'a> PipelineBuilder<'a> {
       state,
       vertex_shader: None,
       fragment_shader: None,
+      vertex_buffer_descriptors: vec![],
       render: None,
     }
   }
@@ -35,6 +37,11 @@ impl<'a> PipelineBuilder<'a> {
     self
   }
 
+  pub fn describe_vertex_buffer(mut self, descriptor: wgpu::VertexBufferDescriptor<'a>) -> Self {
+    self.vertex_buffer_descriptors.push(descriptor);
+    self
+  }
+
   pub fn render(mut self, render_fn: Box<dyn Fn(state::RenderArgs) -> ()>) -> Self {
     self.render = Some(render_fn);
     self
@@ -45,6 +52,7 @@ impl<'a> PipelineBuilder<'a> {
       state,
       vertex_shader,
       fragment_shader,
+      vertex_buffer_descriptors,
       render,
     } = self;
 
@@ -93,12 +101,14 @@ impl<'a> PipelineBuilder<'a> {
           write_mask: wgpu::ColorWrite::ALL,
         }],
 
-        primitive_topology: wgpu::PrimitiveTopology::TriangleList,
-        depth_stencil_state: None,
+        // Vertex state
         vertex_state: wgpu::VertexStateDescriptor {
           index_format: wgpu::IndexFormat::Uint16,
-          vertex_buffers: &[],
+          vertex_buffers: &vertex_buffer_descriptors,
         },
+
+        primitive_topology: wgpu::PrimitiveTopology::TriangleList,
+        depth_stencil_state: None,
         sample_count: 1,
         sample_mask: !0,
         alpha_to_coverage_enabled: false,
