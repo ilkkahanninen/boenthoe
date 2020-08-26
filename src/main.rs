@@ -42,18 +42,28 @@ unsafe impl bytemuck::Zeroable for Vertex {}
 
 const VERTICES: &[Vertex] = &[
     Vertex {
-        position: [0.0, 0.5, 0.0],
-        color: [1.0, 0.0, 0.0],
+        position: [-0.0868241, 0.49240386, 0.0],
+        color: [0.5, 0.0, 0.5],
     },
     Vertex {
-        position: [-0.5, -0.5, 0.0],
-        color: [0.0, 1.0, 0.0],
+        position: [-0.49513406, 0.06958647, 0.0],
+        color: [0.5, 0.0, 0.5],
     },
     Vertex {
-        position: [0.5, -0.5, 0.0],
-        color: [0.0, 0.0, 1.0],
+        position: [-0.21918549, -0.44939706, 0.0],
+        color: [0.5, 0.0, 0.5],
+    },
+    Vertex {
+        position: [0.35966998, -0.3473291, 0.0],
+        color: [0.5, 0.0, 0.5],
+    },
+    Vertex {
+        position: [0.44147372, 0.2347359, 0.0],
+        color: [0.5, 0.0, 0.5],
     },
 ];
+
+const INDICES: &[u16] = &[0, 1, 4, 1, 2, 4, 2, 3, 4];
 
 fn main() {
     let event_loop = EventLoop::new();
@@ -62,9 +72,13 @@ fn main() {
     // Since main can't be async, we're going to need to block
     let mut state = block_on(State::new(&window));
 
-    let buffer = state
+    let vertex_buffer = state
         .device
         .create_buffer_with_data(bytemuck::cast_slice(VERTICES), wgpu::BufferUsage::VERTEX);
+
+    let index_buffer = state
+        .device
+        .create_buffer_with_data(bytemuck::cast_slice(INDICES), wgpu::BufferUsage::INDEX);
 
     PipelineBuilder::new(&mut state)
         .vertex_shader(include_str!("shaders/shader.vert"), "shader.vert")
@@ -88,8 +102,9 @@ fn main() {
             });
 
             render_pass.set_pipeline(&a.pipeline);
-            render_pass.set_vertex_buffer(0, &buffer, 0, 0);
-            render_pass.draw(0..(VERTICES.len() as u32), 0..1);
+            render_pass.set_vertex_buffer(0, &vertex_buffer, 0, 0);
+            render_pass.set_index_buffer(&index_buffer, 0, 0);
+            render_pass.draw_indexed(0..(INDICES.len() as u32), 0, 0..1);
         }))
         .build();
 
