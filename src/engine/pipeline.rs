@@ -1,10 +1,11 @@
-use crate::engine::{shaders, state};
+use crate::engine::{shaders, state, texture};
 
 pub struct PipelineBuilder<'a> {
   state: &'a mut state::State,
   vertex_shader: Option<wgpu::ShaderModule>,
   fragment_shader: Option<wgpu::ShaderModule>,
   vertex_buffer_descriptors: Vec<wgpu::VertexBufferDescriptor<'a>>,
+  pipeline_textures: Vec<texture::PipelineTexture>,
   render: Option<Box<dyn Fn(state::RenderArgs) -> ()>>,
 }
 
@@ -15,6 +16,7 @@ impl<'a> PipelineBuilder<'a> {
       vertex_shader: None,
       fragment_shader: None,
       vertex_buffer_descriptors: vec![],
+      pipeline_textures: vec![],
       render: None,
     }
   }
@@ -42,6 +44,11 @@ impl<'a> PipelineBuilder<'a> {
     self
   }
 
+  pub fn textures(mut self, pipeline_textures: Vec<texture::PipelineTexture>) -> Self {
+    self.pipeline_textures = pipeline_textures;
+    self
+  }
+
   pub fn render(mut self, render_fn: Box<dyn Fn(state::RenderArgs) -> ()>) -> Self {
     self.render = Some(render_fn);
     self
@@ -53,15 +60,33 @@ impl<'a> PipelineBuilder<'a> {
       vertex_shader,
       fragment_shader,
       vertex_buffer_descriptors,
+      pipeline_textures,
       render,
     } = self;
 
-    let render_pipeline_layout =
+    println!("Load {} textures", pipeline_textures.len());
+
+    let render_pipeline_layout = {
+      let bind_group_layouts: Vec<&wgpu::BindGroupLayout> = pipeline_textures
+        .iter()
+        .map(|t| &t.bind_group_layout)
+        .collect();
+
       state
         .device
         .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-          bind_group_layouts: &[],
-        });
+          bind_group_layouts: &bind_group_layouts,
+        })
+    };
+
+    // Load textures to GPU
+    {
+      let command_buffers: Vec<wgpu::CommandBuffer> = pipeline_textures
+        .into_iter()
+        .map(|t| t.command_buffer)
+        .collect();
+      state.queue.submit(&command_buffers);
+    }
 
     let render_pipeline = state
       .device
