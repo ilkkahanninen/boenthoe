@@ -1,4 +1,4 @@
-use crate::engine::state;
+use crate::engine::*;
 use image::GenericImageView;
 
 pub struct PipelineTexture {
@@ -7,14 +7,14 @@ pub struct PipelineTexture {
 }
 
 pub struct TextureBuilder<'a> {
-  pub state: &'a mut state::State,
+  pub engine: &'a mut Engine,
   pub pipeline_textures: Vec<PipelineTexture>,
 }
 
 impl<'a> TextureBuilder<'a> {
-  pub fn new(state: &'a mut state::State) -> Self {
+  pub fn new(engine: &'a mut Engine) -> Self {
     TextureBuilder {
-      state,
+      engine,
       pipeline_textures: vec![],
     }
   }
@@ -30,7 +30,7 @@ impl<'a> TextureBuilder<'a> {
       depth: 1,
     };
 
-    let texture = self.state.device.create_texture(&wgpu::TextureDescriptor {
+    let texture = self.engine.device.create_texture(&wgpu::TextureDescriptor {
       size,
       array_layer_count: 1,
       mip_level_count: 1,
@@ -42,12 +42,12 @@ impl<'a> TextureBuilder<'a> {
     });
 
     let buffer = self
-      .state
+      .engine
       .device
       .create_buffer_with_data(&rgba, wgpu::BufferUsage::COPY_SRC);
 
     let mut encoder = self
-      .state
+      .engine
       .device
       .create_command_encoder(&wgpu::CommandEncoderDescriptor {
         label: Some("texture_buffer_copy_encoder"),
@@ -71,7 +71,7 @@ impl<'a> TextureBuilder<'a> {
 
     let diffuse_texture_view = texture.create_default_view();
 
-    let diffuse_sampler = self.state.device.create_sampler(&wgpu::SamplerDescriptor {
+    let diffuse_sampler = self.engine.device.create_sampler(&wgpu::SamplerDescriptor {
       address_mode_u: wgpu::AddressMode::ClampToEdge,
       address_mode_v: wgpu::AddressMode::ClampToEdge,
       address_mode_w: wgpu::AddressMode::ClampToEdge,
@@ -85,7 +85,7 @@ impl<'a> TextureBuilder<'a> {
 
     let texture_bind_group_layout =
       self
-        .state
+        .engine
         .device
         .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
           bindings: &[
@@ -108,7 +108,7 @@ impl<'a> TextureBuilder<'a> {
         });
 
     let diffuse_bind_group = self
-      .state
+      .engine
       .device
       .create_bind_group(&wgpu::BindGroupDescriptor {
         layout: &texture_bind_group_layout,

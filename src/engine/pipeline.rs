@@ -1,22 +1,22 @@
-use crate::engine::{camera, shaders, state, texture, uniforms};
+use crate::engine::*;
 
 pub struct PipelineBuilder<'a> {
-  state: &'a mut state::State,
+  engine: &'a mut Engine,
   vertex_shader: Option<wgpu::ShaderModule>,
   fragment_shader: Option<wgpu::ShaderModule>,
   vertex_buffer_descriptors: Vec<wgpu::VertexBufferDescriptor<'a>>,
   pipeline_textures: Vec<texture::PipelineTexture>,
   camera: camera::Camera,
   uniforms: uniforms::Uniforms,
-  render: Option<Box<dyn Fn(state::RenderFnContext) -> ()>>,
+  render: Option<Box<dyn Fn(RenderFnContext) -> ()>>,
 }
 
 impl<'a> PipelineBuilder<'a> {
-  pub fn new(state: &'a mut state::State) -> Self {
-    let aspect = state.get_aspect_ratio();
+  pub fn new(engine: &'a mut Engine) -> Self {
+    let aspect = engine.get_aspect_ratio();
 
     PipelineBuilder {
-      state,
+      engine,
       vertex_shader: None,
       fragment_shader: None,
       vertex_buffer_descriptors: vec![],
@@ -37,7 +37,7 @@ impl<'a> PipelineBuilder<'a> {
 
   pub fn vertex_shader(mut self, glsl_source: &str, name: &str) -> Self {
     self.vertex_shader = Some(shaders::load_vertex_shader(
-      &self.state.device,
+      &self.engine.device,
       glsl_source,
       name,
     ));
@@ -46,7 +46,7 @@ impl<'a> PipelineBuilder<'a> {
 
   pub fn fragment_shader(mut self, glsl_source: &str, name: &str) -> Self {
     self.fragment_shader = Some(shaders::load_fragment_shader(
-      &self.state.device,
+      &self.engine.device,
       glsl_source,
       name,
     ));
@@ -63,14 +63,14 @@ impl<'a> PipelineBuilder<'a> {
     self
   }
 
-  pub fn render(mut self, render_fn: Box<dyn Fn(state::RenderFnContext) -> ()>) -> Self {
+  pub fn render(mut self, render_fn: Box<dyn Fn(RenderFnContext) -> ()>) -> Self {
     self.render = Some(render_fn);
     self
   }
 
   pub fn build(self) -> Self {
     let PipelineBuilder {
-      state,
+      engine,
       vertex_shader,
       fragment_shader,
       vertex_buffer_descriptors,
@@ -83,7 +83,7 @@ impl<'a> PipelineBuilder<'a> {
     // Uniforms
 
     uniforms.update_view_proj(&camera);
-    let (uniform_bind_group_layout, uniform_bind_group) = uniforms.create_bind_group(state);
+    let (uniform_bind_group_layout, uniform_bind_group) = uniforms.create_bind_group(engine);
 
     // Create render pipeline layout
 
@@ -96,7 +96,7 @@ impl<'a> PipelineBuilder<'a> {
         bind_group_layouts.push(&t.bind_group_layout);
       }
 
-      state
+      engine
         .device
         .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
           bind_group_layouts: &bind_group_layouts,
@@ -110,12 +110,12 @@ impl<'a> PipelineBuilder<'a> {
         .into_iter()
         .map(|t| t.command_buffer)
         .collect();
-      state.queue.submit(&command_buffers);
+      engine.queue.submit(&command_buffers);
     }
 
     // Create pipeline
 
-    let render_pipeline = state
+    let render_pipeline = engine
       .device
       .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         // Pipeline layout
@@ -147,7 +147,7 @@ impl<'a> PipelineBuilder<'a> {
 
         // Color states
         color_states: &[wgpu::ColorStateDescriptor {
-          format: state.sc_desc.format,
+          format: engine.sc_desc.format,
           color_blend: wgpu::BlendDescriptor::REPLACE,
           alpha_blend: wgpu::BlendDescriptor::REPLACE,
           write_mask: wgpu::ColorWrite::ALL,
@@ -166,12 +166,12 @@ impl<'a> PipelineBuilder<'a> {
         alpha_to_coverage_enabled: false,
       });
 
-    state.rendering_contexts.push(state::RenderingContext {
+    engine.rendering_contexts.push(RenderingContext {
       pipeline: render_pipeline,
       uniform_bind_group,
       render: render.expect("Rendering function is not defined"),
     });
 
-    PipelineBuilder::new(state)
+    PipelineBuilder::new(engine)
   }
 }

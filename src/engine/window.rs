@@ -1,4 +1,4 @@
-use crate::engine::state;
+use crate::engine::*;
 use winit::{
   event::*,
   event_loop::{ControlFlow, EventLoop},
@@ -17,7 +17,7 @@ impl Window {
     Window { window, event_loop }
   }
 
-  pub fn run(self, mut state: state::State) {
+  pub fn run(self, mut engine: Engine) {
     let Window { window, event_loop } = self;
 
     event_loop.run(move |event, _, control_flow| match event {
@@ -25,7 +25,7 @@ impl Window {
         ref event,
         window_id,
       } if window_id == window.id() => {
-        if !state.input(event) {
+        if !engine.input(event) {
           match event {
             WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
             WindowEvent::KeyboardInput { input, .. } => match input {
@@ -38,11 +38,11 @@ impl Window {
               _ => {}
             },
             WindowEvent::Resized(physical_size) => {
-              state.resize(*physical_size);
+              engine.resize(*physical_size);
             }
             WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
               // new_inner_size is &mut so we have to dereference it twice
-              state.resize(**new_inner_size);
+              engine.resize(**new_inner_size);
             }
             _ => {}
           }
@@ -50,8 +50,8 @@ impl Window {
       }
 
       Event::RedrawRequested(_) => {
-        state.update();
-        state.render();
+        engine.update();
+        engine.render();
       }
 
       Event::MainEventsCleared => {

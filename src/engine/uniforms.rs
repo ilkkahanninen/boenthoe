@@ -1,4 +1,4 @@
-use crate::engine::{camera, state};
+use crate::engine::*;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -21,13 +21,13 @@ impl Uniforms {
     self.view_proj = camera.build_view_projection_matrix();
   }
 
-  pub fn create_bind_group(self, state: &state::State) -> (wgpu::BindGroupLayout, wgpu::BindGroup) {
-    let buffer = state.device.create_buffer_with_data(
+  pub fn create_bind_group(self, engine: &Engine) -> (wgpu::BindGroupLayout, wgpu::BindGroup) {
+    let buffer = engine.device.create_buffer_with_data(
       bytemuck::cast_slice(&[self]),
       wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
     );
 
-    let layout = state
+    let layout = engine
       .device
       .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         bindings: &[wgpu::BindGroupLayoutEntry {
@@ -38,7 +38,7 @@ impl Uniforms {
         label: Some("uniform_bind_group_layout"),
       });
 
-    let bind_group = state.device.create_bind_group(&wgpu::BindGroupDescriptor {
+    let bind_group = engine.device.create_bind_group(&wgpu::BindGroupDescriptor {
       layout: &layout,
       bindings: &[wgpu::Binding {
         binding: 0,
