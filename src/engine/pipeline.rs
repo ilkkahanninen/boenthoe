@@ -1,4 +1,4 @@
-use crate::engine::{shaders, state, texture};
+use crate::engine::{camera, shaders, state, texture};
 
 pub struct PipelineBuilder<'a> {
   state: &'a mut state::State,
@@ -6,17 +6,29 @@ pub struct PipelineBuilder<'a> {
   fragment_shader: Option<wgpu::ShaderModule>,
   vertex_buffer_descriptors: Vec<wgpu::VertexBufferDescriptor<'a>>,
   pipeline_textures: Vec<texture::PipelineTexture>,
+  camera: camera::Camera,
   render: Option<Box<dyn Fn(state::RenderArgs) -> ()>>,
 }
 
 impl<'a> PipelineBuilder<'a> {
   pub fn new(state: &'a mut state::State) -> Self {
+    let aspect = state.get_aspect_ratio();
+
     PipelineBuilder {
       state,
       vertex_shader: None,
       fragment_shader: None,
       vertex_buffer_descriptors: vec![],
       pipeline_textures: vec![],
+      camera: camera::Camera {
+        eye: (0.0, 1.0, 2.0).into(),
+        target: (0.0, 0.0, 0.0).into(),
+        up: cgmath::Vector3::unit_y(),
+        aspect,
+        fovy: 45.0,
+        znear: 0.1,
+        zfar: 100.0,
+      },
       render: None,
     }
   }
@@ -61,10 +73,9 @@ impl<'a> PipelineBuilder<'a> {
       fragment_shader,
       vertex_buffer_descriptors,
       pipeline_textures,
+      camera,
       render,
     } = self;
-
-    println!("Load {} textures", pipeline_textures.len());
 
     let render_pipeline_layout = {
       let bind_group_layouts: Vec<&wgpu::BindGroupLayout> = pipeline_textures

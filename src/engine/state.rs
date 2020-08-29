@@ -106,4 +106,8 @@ impl State {
 
     self.queue.submit(&[encoder.finish()]);
   }
+
+  pub fn get_aspect_ratio(&self) -> f32 {
+    self.sc_desc.width as f32 / self.sc_desc.height as f32
+  }
 }
