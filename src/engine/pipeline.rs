@@ -8,7 +8,7 @@ pub struct PipelineBuilder<'a> {
   pipeline_textures: Vec<texture::PipelineTexture>,
   camera: camera::Camera,
   uniforms: uniforms::Uniforms,
-  render: Option<Box<dyn Fn(RenderFnContext) -> ()>>,
+  render: Option<Box<dyn Fn(RenderFnContext, f64) -> ()>>,
 }
 
 impl<'a> PipelineBuilder<'a> {
@@ -63,7 +63,7 @@ impl<'a> PipelineBuilder<'a> {
     self
   }
 
-  pub fn render(mut self, render_fn: Box<dyn Fn(RenderFnContext) -> ()>) -> Self {
+  pub fn render(mut self, render_fn: Box<dyn Fn(RenderFnContext, f64) -> ()>) -> Self {
     self.render = Some(render_fn);
     self
   }

@@ -1,4 +1,6 @@
+use crate::create_state;
 use crate::engine::{pipeline::PipelineBuilder, texture::TextureBuilder, *};
+use crate::scripting::*;
 use futures::executor::block_on;
 
 #[repr(C)]
@@ -61,6 +63,11 @@ const INDICES: &[u16] = &[0, 1, 4, 1, 2, 4, 2, 3, 4];
 pub fn init(window: &winit::window::Window) -> Engine {
   let mut engine = block_on(Engine::new(window));
 
+  let state = create_state!(
+    x => Envelope::linear(64.0, 0.0, 1.0);
+    y => Envelope::linear(64.0, 1.0, 0.0)
+  );
+
   let vertex_buffer = engine
     .device
     .create_buffer_with_data(bytemuck::cast_slice(VERTICES), wgpu::BufferUsage::VERTEX);
@@ -78,13 +85,15 @@ pub fn init(window: &winit::window::Window) -> Engine {
     .fragment_shader(include_str!("shaders/shader.frag"), "shader.frag")
     .describe_vertex_buffer(Vertex::desc())
     .textures(textures)
-    .render(Box::new(move |mut ctx| {
+    .render(Box::new(move |mut ctx, time| {
       let mut render_pass = ctx.begin(wgpu::Color {
         r: 0.9,
         g: 0.7,
         b: 0.1,
         a: 1.0,
       });
+
+      println!("{:?}", state(&time));
 
       render_pass.set_bind_group(1, &texture, &[]);
       render_pass.set_vertex_buffer(0, &vertex_buffer, 0, 0);

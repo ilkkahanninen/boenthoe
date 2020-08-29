@@ -2,6 +2,7 @@ pub mod camera;
 pub mod pipeline;
 pub mod shaders;
 pub mod texture;
+pub mod timer;
 pub mod uniforms;
 pub mod window;
 
@@ -21,7 +22,7 @@ pub struct Engine {
 pub struct RenderingContext {
   pub pipeline: wgpu::RenderPipeline,
   pub uniform_bind_group: wgpu::BindGroup,
-  pub render: Box<dyn Fn(RenderFnContext) -> ()>,
+  pub render: Box<dyn Fn(RenderFnContext, f64) -> ()>,
 }
 
 pub struct RenderFnContext<'a> {
@@ -93,7 +94,7 @@ impl Engine {
     // TODO
   }
 
-  pub fn render(&mut self) {
+  pub fn render(&mut self, time: f64) {
     let frame = self
       .swap_chain
       .get_next_texture()
@@ -106,12 +107,15 @@ impl Engine {
       });
 
     for ctx in self.rendering_contexts.iter() {
-      (ctx.render)(RenderFnContext {
-        target: &frame.view,
-        encoder: &mut encoder,
-        pipeline: &ctx.pipeline,
-        uniform_bind_group: &ctx.uniform_bind_group,
-      });
+      (ctx.render)(
+        RenderFnContext {
+          target: &frame.view,
+          encoder: &mut encoder,
+          pipeline: &ctx.pipeline,
+          uniform_bind_group: &ctx.uniform_bind_group,
+        },
+        time,
+      );
     }
 
     self.queue.submit(&[encoder.finish()]);
