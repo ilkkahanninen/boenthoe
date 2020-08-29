@@ -8,7 +8,7 @@ pub struct PipelineBuilder<'a> {
   pipeline_textures: Vec<texture::PipelineTexture>,
   camera: camera::Camera,
   uniforms: uniforms::Uniforms,
-  render: Option<Box<dyn Fn(state::RenderArgs) -> ()>>,
+  render: Option<Box<dyn Fn(state::RenderFnContext) -> ()>>,
 }
 
 impl<'a> PipelineBuilder<'a> {
@@ -63,7 +63,7 @@ impl<'a> PipelineBuilder<'a> {
     self
   }
 
-  pub fn render(mut self, render_fn: Box<dyn Fn(state::RenderArgs) -> ()>) -> Self {
+  pub fn render(mut self, render_fn: Box<dyn Fn(state::RenderFnContext) -> ()>) -> Self {
     self.render = Some(render_fn);
     self
   }
@@ -88,12 +88,13 @@ impl<'a> PipelineBuilder<'a> {
     // Create render pipeline layout
 
     let render_pipeline_layout = {
-      let mut bind_group_layouts: Vec<&wgpu::BindGroupLayout> = pipeline_textures
-        .iter()
-        .map(|t| &t.bind_group_layout)
-        .collect();
+      // Default uniforms get position 0
+      let mut bind_group_layouts: Vec<&wgpu::BindGroupLayout> = vec![&uniform_bind_group_layout];
 
-      bind_group_layouts.push(&uniform_bind_group_layout);
+      // Textures will get positions 1..
+      for t in pipeline_textures.iter() {
+        bind_group_layouts.push(&t.bind_group_layout);
+      }
 
       state
         .device

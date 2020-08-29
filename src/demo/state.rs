@@ -78,26 +78,15 @@ pub fn create_state(window: &winit::window::Window) -> State {
     .fragment_shader(include_str!("shaders/shader.frag"), "shader.frag")
     .describe_vertex_buffer(Vertex::desc())
     .textures(textures)
-    .render(Box::new(move |a| {
-      let mut render_pass = a.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-        color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-          attachment: a.target,
-          resolve_target: None,
-          load_op: wgpu::LoadOp::Clear,
-          store_op: wgpu::StoreOp::Store,
-          clear_color: wgpu::Color {
-            r: 0.9,
-            g: 0.7,
-            b: 0.1,
-            a: 1.0,
-          },
-        }],
-        depth_stencil_attachment: None,
+    .render(Box::new(move |mut ctx| {
+      let mut render_pass = ctx.begin(wgpu::Color {
+        r: 0.9,
+        g: 0.7,
+        b: 0.1,
+        a: 1.0,
       });
 
-      render_pass.set_pipeline(&a.pipeline);
-      render_pass.set_bind_group(0, &texture, &[]);
-      render_pass.set_bind_group(1, &a.uniform_bind_group, &[]);
+      render_pass.set_bind_group(1, &texture, &[]);
       render_pass.set_vertex_buffer(0, &vertex_buffer, 0, 0);
       render_pass.set_index_buffer(&index_buffer, 0, 0);
       render_pass.draw_indexed(0..(INDICES.len() as u32), 0, 0..1);

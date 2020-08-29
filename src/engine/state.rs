@@ -14,10 +14,10 @@ pub struct State {
 pub struct RenderingContext {
   pub pipeline: wgpu::RenderPipeline,
   pub uniform_bind_group: wgpu::BindGroup,
-  pub render: Box<dyn Fn(RenderArgs) -> ()>,
+  pub render: Box<dyn Fn(RenderFnContext) -> ()>,
 }
 
-pub struct RenderArgs<'a> {
+pub struct RenderFnContext<'a> {
   pub target: &'a wgpu::TextureView,
   pub encoder: &'a mut wgpu::CommandEncoder,
   pub pipeline: &'a wgpu::RenderPipeline,
@@ -99,7 +99,7 @@ impl State {
       });
 
     for ctx in self.rendering_contexts.iter() {
-      (ctx.render)(RenderArgs {
+      (ctx.render)(RenderFnContext {
         target: &frame.view,
         encoder: &mut encoder,
         pipeline: &ctx.pipeline,
@@ -112,5 +112,25 @@ impl State {
 
   pub fn get_aspect_ratio(&self) -> f32 {
     self.sc_desc.width as f32 / self.sc_desc.height as f32
+  }
+}
+
+impl<'a> RenderFnContext<'a> {
+  pub fn begin(&mut self, clear_color: wgpu::Color) -> wgpu::RenderPass {
+    let mut render_pass = self.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+      color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+        attachment: self.target,
+        resolve_target: None,
+        load_op: wgpu::LoadOp::Clear,
+        store_op: wgpu::StoreOp::Store,
+        clear_color,
+      }],
+      depth_stencil_attachment: None,
+    });
+
+    render_pass.set_pipeline(&self.pipeline);
+    render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
+
+    render_pass
   }
 }
