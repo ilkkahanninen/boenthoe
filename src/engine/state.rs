@@ -13,6 +13,7 @@ pub struct State {
 
 pub struct RenderingContext {
   pub pipeline: wgpu::RenderPipeline,
+  pub uniform_bind_group: wgpu::BindGroup,
   pub render: Box<dyn Fn(RenderArgs) -> ()>,
 }
 
@@ -20,6 +21,7 @@ pub struct RenderArgs<'a> {
   pub target: &'a wgpu::TextureView,
   pub encoder: &'a mut wgpu::CommandEncoder,
   pub pipeline: &'a wgpu::RenderPipeline,
+  pub uniform_bind_group: &'a wgpu::BindGroup,
 }
 
 impl State {
@@ -101,6 +103,7 @@ impl State {
         target: &frame.view,
         encoder: &mut encoder,
         pipeline: &ctx.pipeline,
+        uniform_bind_group: &ctx.uniform_bind_group,
       });
     }
 

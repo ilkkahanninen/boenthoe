@@ -97,6 +97,7 @@ pub fn create_state(window: &winit::window::Window) -> State {
 
       render_pass.set_pipeline(&a.pipeline);
       render_pass.set_bind_group(0, &texture, &[]);
+      render_pass.set_bind_group(1, &a.uniform_bind_group, &[]);
       render_pass.set_vertex_buffer(0, &vertex_buffer, 0, 0);
       render_pass.set_index_buffer(&index_buffer, 0, 0);
       render_pass.draw_indexed(0..(INDICES.len() as u32), 0, 0..1);

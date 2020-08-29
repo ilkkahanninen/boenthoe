@@ -1,4 +1,4 @@
-use crate::engine::{camera, shaders, state, texture};
+use crate::engine::{camera, shaders, state, texture, uniforms};
 
 pub struct PipelineBuilder<'a> {
   state: &'a mut state::State,
@@ -7,6 +7,7 @@ pub struct PipelineBuilder<'a> {
   vertex_buffer_descriptors: Vec<wgpu::VertexBufferDescriptor<'a>>,
   pipeline_textures: Vec<texture::PipelineTexture>,
   camera: camera::Camera,
+  uniforms: uniforms::Uniforms,
   render: Option<Box<dyn Fn(state::RenderArgs) -> ()>>,
 }
 
@@ -29,6 +30,7 @@ impl<'a> PipelineBuilder<'a> {
         znear: 0.1,
         zfar: 100.0,
       },
+      uniforms: uniforms::Uniforms::new(),
       render: None,
     }
   }
@@ -74,14 +76,24 @@ impl<'a> PipelineBuilder<'a> {
       vertex_buffer_descriptors,
       pipeline_textures,
       camera,
+      mut uniforms,
       render,
     } = self;
 
+    // Uniforms
+
+    uniforms.update_view_proj(&camera);
+    let (uniform_bind_group_layout, uniform_bind_group) = uniforms.create_bind_group(state);
+
+    // Create render pipeline layout
+
     let render_pipeline_layout = {
-      let bind_group_layouts: Vec<&wgpu::BindGroupLayout> = pipeline_textures
+      let mut bind_group_layouts: Vec<&wgpu::BindGroupLayout> = pipeline_textures
         .iter()
         .map(|t| &t.bind_group_layout)
         .collect();
+
+      bind_group_layouts.push(&uniform_bind_group_layout);
 
       state
         .device
@@ -91,6 +103,7 @@ impl<'a> PipelineBuilder<'a> {
     };
 
     // Load textures to GPU
+
     {
       let command_buffers: Vec<wgpu::CommandBuffer> = pipeline_textures
         .into_iter()
@@ -98,6 +111,8 @@ impl<'a> PipelineBuilder<'a> {
         .collect();
       state.queue.submit(&command_buffers);
     }
+
+    // Create pipeline
 
     let render_pipeline = state
       .device
@@ -152,6 +167,7 @@ impl<'a> PipelineBuilder<'a> {
 
     state.rendering_contexts.push(state::RenderingContext {
       pipeline: render_pipeline,
+      uniform_bind_group,
       render: render.expect("Rendering function is not defined"),
     });
 
