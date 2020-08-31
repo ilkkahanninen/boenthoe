@@ -1,10 +1,8 @@
 [package]
-name = "wgpu-demo"
+name = "boenthoe"
 version = "0.1.0"
-authors = ["Ilkka Hänninen <ilkka.hanninen@reaktor.com>"]
+authors = ["Ilkka Hänninen <ilkka.hanninen@gmail.com>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 image = "0.22"

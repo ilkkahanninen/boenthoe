@@ -110,6 +110,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0d8c1fef690941d3e7788d328517591fecc684c084084702d6ff1641e993699a"
 
 [[package]]
+name = "boenthoe"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "cgmath",
+ "failure",
+ "futures",
+ "image",
+ "shaderc",
+ "wgpu",
+ "winit",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1909,20 +1923,6 @@ dependencies = [
  "thiserror",
  "tracing",
  "wgpu-types",
-]
-
-[[package]]
-name = "wgpu-demo"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "cgmath",
- "failure",
- "futures",
- "image",
- "shaderc",
- "wgpu",
- "winit",
 ]
 
 [[package]]
