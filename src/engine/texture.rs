@@ -6,16 +6,16 @@ pub struct PipelineTexture {
   pub command_buffer: wgpu::CommandBuffer,
 }
 
-pub struct TextureBuilder<'a> {
-  pub engine: &'a mut Engine,
-  pub pipeline_textures: Vec<PipelineTexture>,
+pub struct TextureBuilder<'a, T> {
+  pub engine: &'a engine::Engine<T>,
+  pub command_buffers: Vec<wgpu::CommandBuffer>,
 }
 
-impl<'a> TextureBuilder<'a> {
-  pub fn new(engine: &'a mut Engine) -> Self {
+impl<'a, T> TextureBuilder<'a, T> {
+  pub fn new(engine: &'a engine::Engine<T>) -> Self {
     TextureBuilder {
       engine,
-      pipeline_textures: vec![],
+      command_buffers: vec![],
     }
   }
 
@@ -83,35 +83,11 @@ impl<'a> TextureBuilder<'a> {
       compare: wgpu::CompareFunction::Always,
     });
 
-    let texture_bind_group_layout =
-      self
-        .engine
-        .device
-        .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-          bindings: &[
-            wgpu::BindGroupLayoutEntry {
-              binding: 0,
-              visibility: wgpu::ShaderStage::FRAGMENT,
-              ty: wgpu::BindingType::SampledTexture {
-                multisampled: false,
-                dimension: wgpu::TextureViewDimension::D2,
-                component_type: wgpu::TextureComponentType::Uint,
-              },
-            },
-            wgpu::BindGroupLayoutEntry {
-              binding: 1,
-              visibility: wgpu::ShaderStage::FRAGMENT,
-              ty: wgpu::BindingType::Sampler { comparison: false },
-            },
-          ],
-          label: Some("texture_bind_group_layout"),
-        });
-
     let diffuse_bind_group = self
       .engine
       .device
       .create_bind_group(&wgpu::BindGroupDescriptor {
-        layout: &texture_bind_group_layout,
+        layout: &self.diffuse_bind_group_layout(),
         bindings: &[
           wgpu::Binding {
             binding: 0,
@@ -125,15 +101,33 @@ impl<'a> TextureBuilder<'a> {
         label: Some("diffuse_bind_group"),
       });
 
-    self.pipeline_textures.push(PipelineTexture {
-      bind_group_layout: texture_bind_group_layout,
-      command_buffer: encoder.finish(),
-    });
+    self.command_buffers.push(encoder.finish());
 
     diffuse_bind_group
   }
 
-  pub fn finish(self) -> Vec<PipelineTexture> {
-    self.pipeline_textures
+  pub fn diffuse_bind_group_layout(&self) -> wgpu::BindGroupLayout {
+    self
+      .engine
+      .device
+      .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        bindings: &[
+          wgpu::BindGroupLayoutEntry {
+            binding: 0,
+            visibility: wgpu::ShaderStage::FRAGMENT,
+            ty: wgpu::BindingType::SampledTexture {
+              multisampled: false,
+              dimension: wgpu::TextureViewDimension::D2,
+              component_type: wgpu::TextureComponentType::Uint,
+            },
+          },
+          wgpu::BindGroupLayoutEntry {
+            binding: 1,
+            visibility: wgpu::ShaderStage::FRAGMENT,
+            ty: wgpu::BindingType::Sampler { comparison: false },
+          },
+        ],
+        label: Some("texture_bind_group_layout"),
+      })
   }
 }

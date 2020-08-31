@@ -17,9 +17,8 @@ impl Window {
     Window { window, event_loop }
   }
 
-  pub fn run(self, mut engine: Engine) {
+  pub fn run<T: 'static>(self, mut engine: engine::Engine<T>) {
     let Window { window, event_loop } = self;
-    let timer = timer::Timer::new();
 
     event_loop.run(move |event, _, control_flow| match event {
       Event::WindowEvent {
@@ -51,8 +50,7 @@ impl Window {
       }
 
       Event::RedrawRequested(_) => {
-        engine.update();
-        engine.render(timer.elapsed());
+        engine.render();
       }
 
       Event::MainEventsCleared => {

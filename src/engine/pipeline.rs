@@ -1,177 +1,163 @@
 use crate::engine::*;
 
+#[derive(Default)]
 pub struct PipelineBuilder<'a> {
-  engine: &'a mut Engine,
-  vertex_shader: Option<wgpu::ShaderModule>,
-  fragment_shader: Option<wgpu::ShaderModule>,
+  vertex_shader: Option<ShaderScript<'a>>,
+  fragment_shader: Option<ShaderScript<'a>>,
   vertex_buffer_descriptors: Vec<wgpu::VertexBufferDescriptor<'a>>,
-  pipeline_textures: Vec<texture::PipelineTexture>,
-  camera: camera::Camera,
-  uniforms: uniforms::Uniforms,
-  render: Option<Box<dyn Fn(RenderFnContext, f64) -> ()>>,
+  command_buffers: Vec<wgpu::CommandBuffer>,
+  bind_group_layouts: Vec<wgpu::BindGroupLayout>,
+}
+
+#[derive(Copy, Clone)]
+pub struct ShaderScript<'a> {
+  glsl: &'a str,
+  label: &'a str,
+  kind: shaderc::ShaderKind,
 }
 
 impl<'a> PipelineBuilder<'a> {
-  pub fn new(engine: &'a mut Engine) -> Self {
-    let aspect = engine.get_aspect_ratio();
+  pub fn new() -> Self {
+    Self::default()
+  }
 
-    PipelineBuilder {
-      engine,
-      vertex_shader: None,
-      fragment_shader: None,
-      vertex_buffer_descriptors: vec![],
-      pipeline_textures: vec![],
-      camera: camera::Camera {
-        eye: (0.0, 1.0, 2.0).into(),
-        target: (0.0, 0.0, 0.0).into(),
-        up: cgmath::Vector3::unit_y(),
-        aspect,
-        fovy: 45.0,
-        znear: 0.1,
-        zfar: 100.0,
-      },
-      uniforms: uniforms::Uniforms::new(),
-      render: None,
+  pub fn vertex_shader(mut self, glsl: &'a str, label: &'a str) -> Self {
+    self.vertex_shader = Some(ShaderScript {
+      glsl,
+      label,
+      kind: shaderc::ShaderKind::Vertex,
+    });
+    self
+  }
+
+  pub fn fragment_shader(mut self, glsl: &'a str, label: &'a str) -> Self {
+    self.fragment_shader = Some(ShaderScript {
+      glsl,
+      label,
+      kind: shaderc::ShaderKind::Fragment,
+    });
+    self
+  }
+
+  pub fn add_vertex_buffer_descriptor(
+    mut self,
+    vertex_buffer_descriptor: wgpu::VertexBufferDescriptor<'a>,
+  ) -> Self {
+    self
+      .vertex_buffer_descriptors
+      .push(vertex_buffer_descriptor);
+    self
+  }
+
+  pub fn add_command_buffer(mut self, command_buffer: wgpu::CommandBuffer) -> Self {
+    self.command_buffers.push(command_buffer);
+    self
+  }
+
+  pub fn add_command_buffers(mut self, command_buffers: Vec<wgpu::CommandBuffer>) -> Self {
+    for command_buffer in command_buffers.into_iter() {
+      self.command_buffers.push(command_buffer);
     }
-  }
-
-  pub fn vertex_shader(mut self, glsl_source: &str, name: &str) -> Self {
-    self.vertex_shader = Some(shaders::load_vertex_shader(
-      &self.engine.device,
-      glsl_source,
-      name,
-    ));
     self
   }
 
-  pub fn fragment_shader(mut self, glsl_source: &str, name: &str) -> Self {
-    self.fragment_shader = Some(shaders::load_fragment_shader(
-      &self.engine.device,
-      glsl_source,
-      name,
-    ));
+  pub fn add_bind_group_layout(mut self, bind_group_layout: wgpu::BindGroupLayout) -> Self {
+    self.bind_group_layouts.push(bind_group_layout);
     self
   }
 
-  pub fn describe_vertex_buffer(mut self, descriptor: wgpu::VertexBufferDescriptor<'a>) -> Self {
-    self.vertex_buffer_descriptors.push(descriptor);
-    self
-  }
+  pub fn build<T>(self, engine: &engine::Engine<T>) -> wgpu::RenderPipeline {
+    let device = &engine.device;
 
-  pub fn textures(mut self, pipeline_textures: Vec<texture::PipelineTexture>) -> Self {
-    self.pipeline_textures = pipeline_textures;
-    self
-  }
+    // Run command buffers (e.g. load textures to gpu)
+    println!("Submit command buffers");
+    engine.queue.submit(&self.command_buffers);
 
-  pub fn render(mut self, render_fn: Box<dyn Fn(RenderFnContext, f64) -> ()>) -> Self {
-    self.render = Some(render_fn);
-    self
-  }
-
-  pub fn build(self) -> Self {
-    let PipelineBuilder {
-      engine,
-      vertex_shader,
-      fragment_shader,
-      vertex_buffer_descriptors,
-      pipeline_textures,
-      camera,
-      mut uniforms,
-      render,
-    } = self;
-
-    // Uniforms
-
-    uniforms.update_view_proj(&camera);
-    let (uniform_bind_group_layout, uniform_bind_group) = uniforms.create_bind_group(engine);
-
-    // Create render pipeline layout
-
+    // Create pipeline layout and attach bind group layouts to it
+    println!("Create layout");
     let render_pipeline_layout = {
-      // Default uniforms get position 0
-      let mut bind_group_layouts: Vec<&wgpu::BindGroupLayout> = vec![&uniform_bind_group_layout];
-
-      // Textures will get positions 1..
-      for t in pipeline_textures.iter() {
-        bind_group_layouts.push(&t.bind_group_layout);
-      }
-
-      engine
-        .device
-        .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-          bind_group_layouts: &bind_group_layouts,
-        })
+      let bind_group_layouts: Vec<&wgpu::BindGroupLayout> =
+        self.bind_group_layouts.iter().collect();
+      device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        bind_group_layouts: &bind_group_layouts,
+      })
     };
 
-    // Load textures to GPU
-
-    {
-      let command_buffers: Vec<wgpu::CommandBuffer> = pipeline_textures
-        .into_iter()
-        .map(|t| t.command_buffer)
-        .collect();
-      engine.queue.submit(&command_buffers);
-    }
+    println!("Build vertex shader");
+    let vertex_shader = self.build_shader(device, &self.vertex_shader);
+    println!("Build fragment shader");
+    let fragment_shader = self.build_shader(device, &self.vertex_shader);
 
     // Create pipeline
+    let descriptor = wgpu::RenderPipelineDescriptor {
+      // Pipeline layout
+      layout: &render_pipeline_layout,
 
-    let render_pipeline = engine
-      .device
-      .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-        // Pipeline layout
-        layout: &render_pipeline_layout,
+      // Vertex stage
+      vertex_stage: wgpu::ProgrammableStageDescriptor {
+        module: &vertex_shader.expect("Cannot build a pipeline without vertex shader"),
+        entry_point: "main",
+      },
 
-        // Vertex stage
-        vertex_stage: wgpu::ProgrammableStageDescriptor {
-          module: &vertex_shader.expect("Vertex shader is undefined"),
+      // Fragment state
+      fragment_stage: match fragment_shader {
+        Some(ref module) => Some(wgpu::ProgrammableStageDescriptor {
+          module: &module,
           entry_point: "main",
-        },
-
-        // Fragment state
-        fragment_stage: match fragment_shader {
-          Some(ref fs_module) => Some(wgpu::ProgrammableStageDescriptor {
-            module: fs_module,
-            entry_point: "main",
-          }),
-          None => None,
-        },
-
-        // Rasterization stage
-        rasterization_state: Some(wgpu::RasterizationStateDescriptor {
-          front_face: wgpu::FrontFace::Ccw,
-          cull_mode: wgpu::CullMode::Back,
-          depth_bias: 0,
-          depth_bias_slope_scale: 0.0,
-          depth_bias_clamp: 0.0,
         }),
+        None => None,
+      },
 
-        // Color states
-        color_states: &[wgpu::ColorStateDescriptor {
-          format: engine.sc_desc.format,
-          color_blend: wgpu::BlendDescriptor::REPLACE,
-          alpha_blend: wgpu::BlendDescriptor::REPLACE,
-          write_mask: wgpu::ColorWrite::ALL,
-        }],
+      // Rasterization stage
+      rasterization_state: Some(wgpu::RasterizationStateDescriptor {
+        front_face: wgpu::FrontFace::Ccw,
+        cull_mode: wgpu::CullMode::Back,
+        depth_bias: 0,
+        depth_bias_slope_scale: 0.0,
+        depth_bias_clamp: 0.0,
+      }),
 
-        // Vertex state
-        vertex_state: wgpu::VertexStateDescriptor {
-          index_format: wgpu::IndexFormat::Uint16,
-          vertex_buffers: &vertex_buffer_descriptors,
-        },
+      // Color states
+      color_states: &[wgpu::ColorStateDescriptor {
+        format: engine.swap_chain_descriptor.format,
+        color_blend: wgpu::BlendDescriptor::REPLACE,
+        alpha_blend: wgpu::BlendDescriptor::REPLACE,
+        write_mask: wgpu::ColorWrite::ALL,
+      }],
 
-        primitive_topology: wgpu::PrimitiveTopology::TriangleList,
-        depth_stencil_state: None,
-        sample_count: 1,
-        sample_mask: !0,
-        alpha_to_coverage_enabled: false,
-      });
+      // Vertex state
+      vertex_state: wgpu::VertexStateDescriptor {
+        index_format: wgpu::IndexFormat::Uint16,
+        vertex_buffers: &self.vertex_buffer_descriptors,
+      },
 
-    engine.rendering_contexts.push(RenderingContext {
-      pipeline: render_pipeline,
-      uniform_bind_group,
-      render: render.expect("Rendering function is not defined"),
-    });
+      primitive_topology: wgpu::PrimitiveTopology::TriangleList,
+      depth_stencil_state: None,
+      sample_count: 1,
+      sample_mask: !0,
+      alpha_to_coverage_enabled: false,
+    };
+    println!("Create pipeline {:?}", descriptor);
+    let pipeline = device.create_render_pipeline(&descriptor);
 
-    PipelineBuilder::new(engine)
+    println!("Pipekuedf ");
+
+    pipeline
+  }
+
+  fn build_shader(
+    &self,
+    device: &wgpu::Device,
+    shader: &Option<ShaderScript>,
+  ) -> Option<wgpu::ShaderModule> {
+    shader.map(|s| {
+      let mut compiler = shaderc::Compiler::new().expect("Could not acquire shader compiler");
+      let spirv = compiler
+        .compile_into_spirv(s.glsl, s.kind, s.label, "main", None)
+        .expect("Compiling to SPIR-V failed");
+      let shader_data = wgpu::read_spirv(std::io::Cursor::new(spirv.as_binary_u8()))
+        .expect("Could not convert SPIR-V to shader data");
+      device.create_shader_module(&shader_data)
+    })
   }
 }

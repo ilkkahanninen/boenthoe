@@ -1,15 +1,8 @@
 #[macro_export]
 macro_rules! create_state {
-  ($($k:ident => $e:expr);*) => {
+  ($T:ident { $($k:ident => $e:expr),* }) => {
     {
-      #[derive(Debug)]
-      struct State {
-        $(
-          $k: f64,
-        )*
-      }
-
-      Box::new(|pos: &f64| State {
+      Box::new(|pos: &f64| $T {
         $(
           $k: $e.get_value(pos),
         )*

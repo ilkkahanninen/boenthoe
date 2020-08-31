@@ -1,5 +1,5 @@
 use crate::create_state;
-use crate::engine::{pipeline::PipelineBuilder, texture::TextureBuilder, *};
+use crate::engine::*;
 use crate::scripting::*;
 use futures::executor::block_on;
 
@@ -60,47 +60,94 @@ const VERTICES: &[Vertex] = &[
 
 const INDICES: &[u16] = &[0, 1, 4, 1, 2, 4, 2, 3, 4];
 
-pub fn init(window: &winit::window::Window) -> Engine {
-  let mut engine = block_on(Engine::new(window));
+pub struct State {
+  x: f64,
+  y: f64,
+}
 
-  let state = create_state!(
-    x => Envelope::linear(64.0, 0.0, 1.0);
+struct TestEffect {
+  pipeline: wgpu::RenderPipeline,
+  vertex_buffer: wgpu::Buffer,
+  index_buffer: wgpu::Buffer,
+  // texture: wgpu::BindGroup,
+  // uniforms: uniforms::Uniforms,
+  // uniforms_bind_group: wgpu::BindGroup,
+}
+
+impl TestEffect {
+  fn new<T>(engine: &engine::Engine<T>) -> Box<Self> {
+    let device = &engine.device;
+
+    // let uniforms = uniforms::Uniforms::new();
+
+    let vertex_buffer =
+      device.create_buffer_with_data(bytemuck::cast_slice(VERTICES), wgpu::BufferUsage::VERTEX);
+
+    let index_buffer =
+      device.create_buffer_with_data(bytemuck::cast_slice(INDICES), wgpu::BufferUsage::INDEX);
+
+    // let mut texture_builder = texture::TextureBuilder::new(engine);
+    // let texture = texture_builder.diffuse(include_bytes!("images/jml.png"), "happytree");
+
+    let pipeline = pipeline::PipelineBuilder::new()
+      .vertex_shader(include_str!("shaders/shader.vert"), "shader.vert")
+      .fragment_shader(include_str!("shaders/shader.frag"), "shader.frag")
+      .add_vertex_buffer_descriptor(Vertex::desc())
+      // .add_bind_group_layout(uniforms::Uniforms::create_bind_group_layout(device))
+      // .add_bind_group_layout(texture_builder.diffuse_bind_group_layout())
+      // .add_command_buffers(texture_builder.command_buffers)
+      .build(engine);
+
+    Box::new(Self {
+      pipeline,
+      vertex_buffer,
+      index_buffer,
+      // texture,
+      // uniforms,
+      // uniforms_bind_group: uniforms.create_bind_group(device),
+    })
+  }
+}
+
+impl renderer::Renderer<State> for TestEffect {
+  fn update(&mut self, ctx: &renderer::UpdateContext<State>) {
+    // self.uniforms_bind_group = self.uniforms.create_bind_group(ctx.device);
+  }
+
+  fn render(&self, ctx: &mut renderer::RenderingContext<State>) {
+    // let mut render_pass = ctx.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+    //   color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+    //     attachment: ctx.output,
+    //     resolve_target: None,
+    //     load_op: wgpu::LoadOp::Clear,
+    //     store_op: wgpu::StoreOp::Store,
+    //     clear_color: wgpu::Color {
+    //       r: 0.1,
+    //       g: 0.15,
+    //       b: 0.2,
+    //       a: 1.0,
+    //     },
+    //   }],
+    //   depth_stencil_attachment: None,
+    // });
+
+    // render_pass.set_pipeline(&self.pipeline);
+    // render_pass.set_bind_group(0, &self.uniforms_bind_group, &[]);
+    // render_pass.set_bind_group(1, &self.texture, &[]);
+    // render_pass.set_vertex_buffer(0, &self.vertex_buffer, 0, 0);
+    // render_pass.set_index_buffer(&self.index_buffer, 0, 0);
+    // render_pass.draw_indexed(0..(INDICES.len() as u32), 0, 0..1);
+  }
+}
+
+pub fn init(window: &winit::window::Window) -> engine::Engine<State> {
+  let state = create_state!(State {
+    x => Envelope::linear(64.0, 0.0, 1.0),
     y => Envelope::linear(64.0, 1.0, 0.0)
-  );
+  });
 
-  let vertex_buffer = engine
-    .device
-    .create_buffer_with_data(bytemuck::cast_slice(VERTICES), wgpu::BufferUsage::VERTEX);
-
-  let index_buffer = engine
-    .device
-    .create_buffer_with_data(bytemuck::cast_slice(INDICES), wgpu::BufferUsage::INDEX);
-
-  let mut texture_builder = TextureBuilder::new(&mut engine);
-  let texture = texture_builder.diffuse(include_bytes!("images/jml.png"), "happytree");
-  let textures = texture_builder.finish();
-
-  PipelineBuilder::new(&mut engine)
-    .vertex_shader(include_str!("shaders/shader.vert"), "shader.vert")
-    .fragment_shader(include_str!("shaders/shader.frag"), "shader.frag")
-    .describe_vertex_buffer(Vertex::desc())
-    .textures(textures)
-    .render(Box::new(move |mut ctx, time| {
-      let mut render_pass = ctx.begin(wgpu::Color {
-        r: 0.9,
-        g: 0.7,
-        b: 0.1,
-        a: 1.0,
-      });
-
-      println!("{:?}", state(&time));
-
-      render_pass.set_bind_group(1, &texture, &[]);
-      render_pass.set_vertex_buffer(0, &vertex_buffer, 0, 0);
-      render_pass.set_index_buffer(&index_buffer, 0, 0);
-      render_pass.draw_indexed(0..(INDICES.len() as u32), 0, 0..1);
-    }))
-    .build();
+  let mut engine = block_on(engine::Engine::new(window, Box::new(state)));
+  engine.add_renderer(TestEffect::new(&engine));
 
   engine
 }

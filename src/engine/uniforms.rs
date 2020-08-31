@@ -21,25 +21,25 @@ impl Uniforms {
     self.view_proj = camera.build_view_projection_matrix();
   }
 
-  pub fn create_bind_group(self, engine: &Engine) -> (wgpu::BindGroupLayout, wgpu::BindGroup) {
-    let buffer = engine.device.create_buffer_with_data(
+  pub fn create_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
+    device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+      bindings: &[wgpu::BindGroupLayoutEntry {
+        binding: 0,
+        visibility: wgpu::ShaderStage::VERTEX,
+        ty: wgpu::BindingType::UniformBuffer { dynamic: false },
+      }],
+      label: Some("uniform_bind_group_layout"),
+    })
+  }
+
+  pub fn create_bind_group(self, device: &wgpu::Device) -> wgpu::BindGroup {
+    let buffer = device.create_buffer_with_data(
       bytemuck::cast_slice(&[self]),
       wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
     );
 
-    let layout = engine
-      .device
-      .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        bindings: &[wgpu::BindGroupLayoutEntry {
-          binding: 0,
-          visibility: wgpu::ShaderStage::VERTEX,
-          ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-        }],
-        label: Some("uniform_bind_group_layout"),
-      });
-
-    let bind_group = engine.device.create_bind_group(&wgpu::BindGroupDescriptor {
-      layout: &layout,
+    device.create_bind_group(&wgpu::BindGroupDescriptor {
+      layout: &Self::create_bind_group_layout(device),
       bindings: &[wgpu::Binding {
         binding: 0,
         resource: wgpu::BindingResource::Buffer {
@@ -48,8 +48,6 @@ impl Uniforms {
         },
       }],
       label: Some("uniform_bind_group"),
-    });
-
-    (layout, bind_group)
+    })
   }
 }
