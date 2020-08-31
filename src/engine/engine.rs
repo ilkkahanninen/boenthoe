@@ -2,6 +2,7 @@ use crate::engine::*;
 use winit::{event::*, window::Window};
 
 pub struct Engine<T> {
+  pub instance: wgpu::Instance,
   pub surface: wgpu::Surface,
   pub adapter: wgpu::Adapter,
   pub device: wgpu::Device,
@@ -16,28 +17,32 @@ pub struct Engine<T> {
 
 impl<T> Engine<T> {
   pub async fn new(window: &Window, get_state: Box<dyn Fn(&f64) -> T>) -> Self {
-    let size = window.inner_size();
+    let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
+    let (size, surface) = unsafe {
+      let size = window.inner_size();
+      let surface = instance.create_surface(window);
+      (size, surface)
+    };
 
-    let surface = wgpu::Surface::create(window);
-
-    let adapter = wgpu::Adapter::request(
-      &wgpu::RequestAdapterOptions {
+    let adapter = instance
+      .request_adapter(&wgpu::RequestAdapterOptions {
         power_preference: wgpu::PowerPreference::Default,
         compatible_surface: Some(&surface),
-      },
-      wgpu::BackendBit::PRIMARY, // Vulkan + Metal + DX12 + Browser WebGPU
-    )
-    .await
-    .unwrap();
+      })
+      .await
+      .unwrap();
 
     let (device, queue) = adapter
-      .request_device(&wgpu::DeviceDescriptor {
-        extensions: wgpu::Extensions {
-          anisotropic_filtering: false,
+      .request_device(
+        &wgpu::DeviceDescriptor {
+          features: wgpu::Features::empty(),
+          shader_validation: true,
+          limits: Default::default(),
         },
-        limits: Default::default(),
-      })
-      .await;
+        None,
+      )
+      .await
+      .unwrap();
 
     let swap_chain_descriptor = wgpu::SwapChainDescriptor {
       usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
@@ -49,6 +54,7 @@ impl<T> Engine<T> {
     let swap_chain = device.create_swap_chain(&surface, &swap_chain_descriptor);
 
     Self {
+      instance,
       surface,
       adapter,
       device,
@@ -86,7 +92,7 @@ impl<T> Engine<T> {
   pub fn render(&mut self) {
     let frame = self
       .swap_chain
-      .get_next_texture()
+      .get_current_frame()
       .expect("Timeout getting a frame texture");
 
     let mut encoder = self
@@ -107,12 +113,12 @@ impl<T> Engine<T> {
         renderer.render(&mut renderer::RenderingContext {
           device: &self.device,
           encoder: &mut encoder,
-          output: &frame.view,
+          output: &frame.output.view,
           state: &state,
         });
       }
     }
 
-    self.queue.submit(&[encoder.finish()]);
+    self.queue.submit(vec![encoder.finish()]);
   }
 }

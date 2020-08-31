@@ -69,10 +69,6 @@ impl<'a> PipelineBuilder<'a> {
   pub fn build<T>(self, engine: &engine::Engine<T>) -> wgpu::RenderPipeline {
     let device = &engine.device;
 
-    // Run command buffers (e.g. load textures to gpu)
-    println!("Submit command buffers");
-    engine.queue.submit(&self.command_buffers);
-
     // Create pipeline layout and attach bind group layouts to it
     println!("Create layout");
     let render_pipeline_layout = {
@@ -80,6 +76,8 @@ impl<'a> PipelineBuilder<'a> {
         self.bind_group_layouts.iter().collect();
       device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         bind_group_layouts: &bind_group_layouts,
+        label: Some("pipeline_layout"),
+        push_constant_ranges: &[],
       })
     };
 
@@ -91,7 +89,7 @@ impl<'a> PipelineBuilder<'a> {
     // Create pipeline
     let descriptor = wgpu::RenderPipelineDescriptor {
       // Pipeline layout
-      layout: &render_pipeline_layout,
+      layout: Some(&render_pipeline_layout),
 
       // Vertex stage
       vertex_stage: wgpu::ProgrammableStageDescriptor {
@@ -115,6 +113,7 @@ impl<'a> PipelineBuilder<'a> {
         depth_bias: 0,
         depth_bias_slope_scale: 0.0,
         depth_bias_clamp: 0.0,
+        clamp_depth: false,
       }),
 
       // Color states
@@ -136,11 +135,14 @@ impl<'a> PipelineBuilder<'a> {
       sample_count: 1,
       sample_mask: !0,
       alpha_to_coverage_enabled: false,
+      label: Some("pipeline_layout"),
     };
     println!("Create pipeline {:?}", descriptor);
     let pipeline = device.create_render_pipeline(&descriptor);
 
-    println!("Pipekuedf ");
+    // Run command buffers (e.g. load textures to gpu)
+    println!("Submit command buffers");
+    engine.queue.submit(self.command_buffers);
 
     pipeline
   }
@@ -155,9 +157,8 @@ impl<'a> PipelineBuilder<'a> {
       let spirv = compiler
         .compile_into_spirv(s.glsl, s.kind, s.label, "main", None)
         .expect("Compiling to SPIR-V failed");
-      let shader_data = wgpu::read_spirv(std::io::Cursor::new(spirv.as_binary_u8()))
-        .expect("Could not convert SPIR-V to shader data");
-      device.create_shader_module(&shader_data)
+      let shader_data = wgpu::util::make_spirv(spirv.as_binary_u8());
+      device.create_shader_module(shader_data)
     })
   }
 }

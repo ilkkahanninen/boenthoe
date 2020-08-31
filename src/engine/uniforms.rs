@@ -1,4 +1,5 @@
 use crate::engine::*;
+use wgpu::util::DeviceExt;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -23,29 +24,31 @@ impl Uniforms {
 
   pub fn create_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
     device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-      bindings: &[wgpu::BindGroupLayoutEntry {
+      entries: &[wgpu::BindGroupLayoutEntry {
         binding: 0,
         visibility: wgpu::ShaderStage::VERTEX,
-        ty: wgpu::BindingType::UniformBuffer { dynamic: false },
+        ty: wgpu::BindingType::UniformBuffer {
+          dynamic: false,
+          min_binding_size: None,
+        },
+        count: None,
       }],
       label: Some("uniform_bind_group_layout"),
     })
   }
 
   pub fn create_bind_group(self, device: &wgpu::Device) -> wgpu::BindGroup {
-    let buffer = device.create_buffer_with_data(
-      bytemuck::cast_slice(&[self]),
-      wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
-    );
+    let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+      contents: bytemuck::cast_slice(&[self]),
+      usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
+      label: Some("uniform_buffer"),
+    });
 
     device.create_bind_group(&wgpu::BindGroupDescriptor {
       layout: &Self::create_bind_group_layout(device),
-      bindings: &[wgpu::Binding {
+      entries: &[wgpu::BindGroupEntry {
         binding: 0,
-        resource: wgpu::BindingResource::Buffer {
-          buffer: &buffer,
-          range: 0..std::mem::size_of_val(&self) as wgpu::BufferAddress,
-        },
+        resource: wgpu::BindingResource::Buffer(buffer.slice(..)),
       }],
       label: Some("uniform_bind_group"),
     })

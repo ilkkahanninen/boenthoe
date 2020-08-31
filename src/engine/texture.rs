@@ -1,5 +1,6 @@
 use crate::engine::*;
 use image::GenericImageView;
+use wgpu::util::DeviceExt;
 
 pub struct PipelineTexture {
   pub bind_group_layout: wgpu::BindGroupLayout,
@@ -32,7 +33,6 @@ impl<'a, T> TextureBuilder<'a, T> {
 
     let texture = self.engine.device.create_texture(&wgpu::TextureDescriptor {
       size,
-      array_layer_count: 1,
       mip_level_count: 1,
       sample_count: 1,
       dimension: wgpu::TextureDimension::D2,
@@ -44,7 +44,11 @@ impl<'a, T> TextureBuilder<'a, T> {
     let buffer = self
       .engine
       .device
-      .create_buffer_with_data(&rgba, wgpu::BufferUsage::COPY_SRC);
+      .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        contents: &rgba,
+        usage: wgpu::BufferUsage::COPY_SRC,
+        label: Some("texture_diffuse_buffer"),
+      });
 
     let mut encoder = self
       .engine
@@ -56,20 +60,21 @@ impl<'a, T> TextureBuilder<'a, T> {
     encoder.copy_buffer_to_texture(
       wgpu::BufferCopyView {
         buffer: &buffer,
-        offset: 0,
-        bytes_per_row: 4 * dimensions.0,
-        rows_per_image: dimensions.1,
+        layout: wgpu::TextureDataLayout {
+          offset: 0,
+          bytes_per_row: 4 * dimensions.0,
+          rows_per_image: dimensions.1,
+        },
       },
       wgpu::TextureCopyView {
         texture: &texture,
         mip_level: 0,
-        array_layer: 0,
         origin: wgpu::Origin3d::ZERO,
       },
       size,
     );
 
-    let diffuse_texture_view = texture.create_default_view();
+    let diffuse_texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
 
     let diffuse_sampler = self.engine.device.create_sampler(&wgpu::SamplerDescriptor {
       address_mode_u: wgpu::AddressMode::ClampToEdge,
@@ -80,7 +85,9 @@ impl<'a, T> TextureBuilder<'a, T> {
       mipmap_filter: wgpu::FilterMode::Nearest,
       lod_min_clamp: -100.0,
       lod_max_clamp: 100.0,
-      compare: wgpu::CompareFunction::Always,
+      compare: Some(wgpu::CompareFunction::Always),
+      anisotropy_clamp: None,
+      label: Some("texture_diffuse_sampler"),
     });
 
     let diffuse_bind_group = self
@@ -88,12 +95,12 @@ impl<'a, T> TextureBuilder<'a, T> {
       .device
       .create_bind_group(&wgpu::BindGroupDescriptor {
         layout: &self.diffuse_bind_group_layout(),
-        bindings: &[
-          wgpu::Binding {
+        entries: &[
+          wgpu::BindGroupEntry {
             binding: 0,
             resource: wgpu::BindingResource::TextureView(&diffuse_texture_view),
           },
-          wgpu::Binding {
+          wgpu::BindGroupEntry {
             binding: 1,
             resource: wgpu::BindingResource::Sampler(&diffuse_sampler),
           },
@@ -111,7 +118,7 @@ impl<'a, T> TextureBuilder<'a, T> {
       .engine
       .device
       .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        bindings: &[
+        entries: &[
           wgpu::BindGroupLayoutEntry {
             binding: 0,
             visibility: wgpu::ShaderStage::FRAGMENT,
@@ -120,11 +127,13 @@ impl<'a, T> TextureBuilder<'a, T> {
               dimension: wgpu::TextureViewDimension::D2,
               component_type: wgpu::TextureComponentType::Uint,
             },
+            count: None,
           },
           wgpu::BindGroupLayoutEntry {
             binding: 1,
             visibility: wgpu::ShaderStage::FRAGMENT,
             ty: wgpu::BindingType::Sampler { comparison: false },
+            count: None,
           },
         ],
         label: Some("texture_bind_group_layout"),

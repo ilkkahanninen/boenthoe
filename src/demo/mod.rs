@@ -2,6 +2,7 @@ use crate::create_state;
 use crate::engine::*;
 use crate::scripting::*;
 use futures::executor::block_on;
+use wgpu::util::DeviceExt;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
@@ -80,11 +81,17 @@ impl TestEffect {
 
     // let uniforms = uniforms::Uniforms::new();
 
-    let vertex_buffer =
-      device.create_buffer_with_data(bytemuck::cast_slice(VERTICES), wgpu::BufferUsage::VERTEX);
+    let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+      contents: bytemuck::cast_slice(VERTICES),
+      usage: wgpu::BufferUsage::VERTEX,
+      label: Some("vertex_buffer"),
+    });
 
-    let index_buffer =
-      device.create_buffer_with_data(bytemuck::cast_slice(INDICES), wgpu::BufferUsage::INDEX);
+    let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+      contents: bytemuck::cast_slice(INDICES),
+      usage: wgpu::BufferUsage::INDEX,
+      label: Some("index_buffer"),
+    });
 
     // let mut texture_builder = texture::TextureBuilder::new(engine);
     // let texture = texture_builder.diffuse(include_bytes!("images/jml.png"), "happytree");
