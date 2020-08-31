@@ -16,6 +16,7 @@ pub struct ShaderScript<'a> {
   kind: shaderc::ShaderKind,
 }
 
+#[allow(dead_code)]
 impl<'a> PipelineBuilder<'a> {
   pub fn new() -> Self {
     Self::default()
@@ -75,8 +76,8 @@ impl<'a> PipelineBuilder<'a> {
       let bind_group_layouts: Vec<&wgpu::BindGroupLayout> =
         self.bind_group_layouts.iter().collect();
       device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        bind_group_layouts: &bind_group_layouts,
         label: Some("pipeline_layout"),
+        bind_group_layouts: &bind_group_layouts,
         push_constant_ranges: &[],
       })
     };
@@ -84,10 +85,13 @@ impl<'a> PipelineBuilder<'a> {
     println!("Build vertex shader");
     let vertex_shader = self.build_shader(device, &self.vertex_shader);
     println!("Build fragment shader");
-    let fragment_shader = self.build_shader(device, &self.vertex_shader);
+    let fragment_shader = self.build_shader(device, &self.fragment_shader);
 
     // Create pipeline
-    let descriptor = wgpu::RenderPipelineDescriptor {
+    println!("Create pipeline");
+    let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+      label: None,
+
       // Pipeline layout
       layout: Some(&render_pipeline_layout),
 
@@ -124,6 +128,9 @@ impl<'a> PipelineBuilder<'a> {
         write_mask: wgpu::ColorWrite::ALL,
       }],
 
+      // Depth stencil state
+      depth_stencil_state: None,
+
       // Vertex state
       vertex_state: wgpu::VertexStateDescriptor {
         index_format: wgpu::IndexFormat::Uint16,
@@ -131,14 +138,10 @@ impl<'a> PipelineBuilder<'a> {
       },
 
       primitive_topology: wgpu::PrimitiveTopology::TriangleList,
-      depth_stencil_state: None,
       sample_count: 1,
       sample_mask: !0,
       alpha_to_coverage_enabled: false,
-      label: Some("pipeline_layout"),
-    };
-    println!("Create pipeline {:?}", descriptor);
-    let pipeline = device.create_render_pipeline(&descriptor);
+    });
 
     // Run command buffers (e.g. load textures to gpu)
     println!("Submit command buffers");

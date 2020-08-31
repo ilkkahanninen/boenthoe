@@ -13,13 +13,17 @@ pub struct Window {
 impl Window {
   pub fn new() -> Self {
     let event_loop = EventLoop::new();
-    let window = WindowBuilder::new().build(&event_loop).unwrap();
+    let window = WindowBuilder::new()
+      .with_title("My first Rust demo")
+      .build(&event_loop)
+      .unwrap();
     Window { window, event_loop }
   }
 
   pub fn run<T: 'static>(self, mut engine: engine::Engine<T>) {
     let Window { window, event_loop } = self;
 
+    engine.start();
     event_loop.run(move |event, _, control_flow| match event {
       Event::WindowEvent {
         ref event,

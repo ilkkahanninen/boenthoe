@@ -10,6 +10,7 @@ pub struct Uniforms {
 unsafe impl bytemuck::Pod for Uniforms {}
 unsafe impl bytemuck::Zeroable for Uniforms {}
 
+#[allow(dead_code)]
 impl Uniforms {
   pub fn new() -> Self {
     use cgmath::SquareMatrix;

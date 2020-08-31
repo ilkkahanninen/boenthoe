@@ -36,8 +36,8 @@ impl<T> Engine<T> {
       .request_device(
         &wgpu::DeviceDescriptor {
           features: wgpu::Features::empty(),
-          shader_validation: true,
           limits: Default::default(),
+          shader_validation: true,
         },
         None,
       )

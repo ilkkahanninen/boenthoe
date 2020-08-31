@@ -16,6 +16,7 @@ pub struct Envelope {
   pub get_value: Box<dyn Fn(&f64) -> f64>,
 }
 
+#[allow(dead_code)]
 impl Envelope {
   pub fn hold(duration: f64, value: f64) -> Self {
     Self {

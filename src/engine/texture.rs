@@ -2,11 +2,6 @@ use crate::engine::*;
 use image::GenericImageView;
 use wgpu::util::DeviceExt;
 
-pub struct PipelineTexture {
-  pub bind_group_layout: wgpu::BindGroupLayout,
-  pub command_buffer: wgpu::CommandBuffer,
-}
-
 pub struct TextureBuilder<'a, T> {
   pub engine: &'a engine::Engine<T>,
   pub command_buffers: Vec<wgpu::CommandBuffer>,
@@ -57,6 +52,7 @@ impl<'a, T> TextureBuilder<'a, T> {
         label: Some("texture_buffer_copy_encoder"),
       });
 
+    // TODO: Calculate padded bytes
     encoder.copy_buffer_to_texture(
       wgpu::BufferCopyView {
         buffer: &buffer,
@@ -85,7 +81,7 @@ impl<'a, T> TextureBuilder<'a, T> {
       mipmap_filter: wgpu::FilterMode::Nearest,
       lod_min_clamp: -100.0,
       lod_max_clamp: 100.0,
-      compare: Some(wgpu::CompareFunction::Always),
+      compare: None,
       anisotropy_clamp: None,
       label: Some("texture_diffuse_sampler"),
     });

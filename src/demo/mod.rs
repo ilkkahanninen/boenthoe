@@ -11,6 +11,7 @@ pub struct Vertex {
   tex_coords: [f32; 2],
 }
 
+#[allow(dead_code)]
 impl Vertex {
   fn desc<'a>() -> wgpu::VertexBufferDescriptor<'a> {
     use std::mem;
@@ -62,24 +63,26 @@ const VERTICES: &[Vertex] = &[
 const INDICES: &[u16] = &[0, 1, 4, 1, 2, 4, 2, 3, 4];
 
 pub struct State {
-  x: f64,
-  y: f64,
+  cam_x: f64,
+  cam_y: f64,
+  cam_z: f64,
 }
 
+#[allow(dead_code)]
 struct TestEffect {
   pipeline: wgpu::RenderPipeline,
   vertex_buffer: wgpu::Buffer,
   index_buffer: wgpu::Buffer,
-  // texture: wgpu::BindGroup,
-  // uniforms: uniforms::Uniforms,
-  // uniforms_bind_group: wgpu::BindGroup,
+  texture: wgpu::BindGroup,
+  uniforms: uniforms::Uniforms,
+  uniforms_bind_group: wgpu::BindGroup,
 }
 
 impl TestEffect {
   fn new<T>(engine: &engine::Engine<T>) -> Box<Self> {
     let device = &engine.device;
 
-    // let uniforms = uniforms::Uniforms::new();
+    let uniforms = uniforms::Uniforms::new();
 
     let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
       contents: bytemuck::cast_slice(VERTICES),
@@ -93,64 +96,77 @@ impl TestEffect {
       label: Some("index_buffer"),
     });
 
-    // let mut texture_builder = texture::TextureBuilder::new(engine);
-    // let texture = texture_builder.diffuse(include_bytes!("images/jml.png"), "happytree");
+    let mut texture_builder = texture::TextureBuilder::new(engine);
+    let texture = texture_builder.diffuse(include_bytes!("images/jml.png"), "happytree");
 
     let pipeline = pipeline::PipelineBuilder::new()
       .vertex_shader(include_str!("shaders/shader.vert"), "shader.vert")
       .fragment_shader(include_str!("shaders/shader.frag"), "shader.frag")
       .add_vertex_buffer_descriptor(Vertex::desc())
-      // .add_bind_group_layout(uniforms::Uniforms::create_bind_group_layout(device))
-      // .add_bind_group_layout(texture_builder.diffuse_bind_group_layout())
-      // .add_command_buffers(texture_builder.command_buffers)
+      .add_bind_group_layout(uniforms::Uniforms::create_bind_group_layout(device))
+      .add_bind_group_layout(texture_builder.diffuse_bind_group_layout())
+      .add_command_buffers(texture_builder.command_buffers)
       .build(engine);
 
     Box::new(Self {
       pipeline,
       vertex_buffer,
       index_buffer,
-      // texture,
-      // uniforms,
-      // uniforms_bind_group: uniforms.create_bind_group(device),
+      texture,
+      uniforms,
+      uniforms_bind_group: uniforms.create_bind_group(device),
     })
   }
 }
 
 impl renderer::Renderer<State> for TestEffect {
   fn update(&mut self, ctx: &renderer::UpdateContext<State>) {
-    // self.uniforms_bind_group = self.uniforms.create_bind_group(ctx.device);
+    self.uniforms.update_view_proj(&camera::Camera {
+      eye: (
+        ctx.state.cam_x as f32,
+        ctx.state.cam_y as f32,
+        ctx.state.cam_z as f32,
+      )
+        .into(),
+      // have it look at the origin
+      target: (0.0, 0.0, 0.0).into(),
+      // which way is "up"
+      up: cgmath::Vector3::unit_y(),
+      aspect: 1.0, // TODO: Calculate correct aspect ratio
+      fovy: 45.0,
+      znear: 0.1,
+      zfar: 100.0,
+    });
+    self.uniforms_bind_group = self.uniforms.create_bind_group(ctx.device);
   }
 
   fn render(&self, ctx: &mut renderer::RenderingContext<State>) {
-    // let mut render_pass = ctx.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-    //   color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-    //     attachment: ctx.output,
-    //     resolve_target: None,
-    //     load_op: wgpu::LoadOp::Clear,
-    //     store_op: wgpu::StoreOp::Store,
-    //     clear_color: wgpu::Color {
-    //       r: 0.1,
-    //       g: 0.15,
-    //       b: 0.2,
-    //       a: 1.0,
-    //     },
-    //   }],
-    //   depth_stencil_attachment: None,
-    // });
+    let mut render_pass = ctx.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+      color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+        attachment: ctx.output,
+        resolve_target: None,
+        ops: wgpu::Operations {
+          load: wgpu::LoadOp::Clear(wgpu::Color::BLUE),
+          store: true,
+        },
+      }],
+      depth_stencil_attachment: None,
+    });
 
-    // render_pass.set_pipeline(&self.pipeline);
-    // render_pass.set_bind_group(0, &self.uniforms_bind_group, &[]);
-    // render_pass.set_bind_group(1, &self.texture, &[]);
-    // render_pass.set_vertex_buffer(0, &self.vertex_buffer, 0, 0);
-    // render_pass.set_index_buffer(&self.index_buffer, 0, 0);
-    // render_pass.draw_indexed(0..(INDICES.len() as u32), 0, 0..1);
+    render_pass.set_pipeline(&self.pipeline);
+    render_pass.set_bind_group(0, &self.uniforms_bind_group, &[]);
+    render_pass.set_bind_group(1, &self.texture, &[]);
+    render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+    render_pass.set_index_buffer(self.index_buffer.slice(..));
+    render_pass.draw_indexed(0..(INDICES.len() as u32), 0, 0..1);
   }
 }
 
 pub fn init(window: &winit::window::Window) -> engine::Engine<State> {
   let state = create_state!(State {
-    x => Envelope::linear(64.0, 0.0, 1.0),
-    y => Envelope::linear(64.0, 1.0, 0.0)
+    cam_x => Envelope::linear(8.0, 0.0, 1.0),
+    cam_y => Envelope::linear(8.0, 1.0, 0.0),
+    cam_z => Envelope::linear(8.0, 1.0, 0.0)
   });
 
   let mut engine = block_on(engine::Engine::new(window, Box::new(state)));
