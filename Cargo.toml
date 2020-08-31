@@ -5,7 +5,7 @@ authors = ["Ilkka Hänninen <ilkka.hanninen@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-image = "0.22"
+image = "0.23.9"
 winit = "0.20"
 wgpu = "0.6.0"
 futures = "0.3.4"

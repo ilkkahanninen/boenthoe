@@ -97,7 +97,7 @@ impl TestEffect {
     });
 
     let mut texture_builder = texture::TextureBuilder::new(engine);
-    let texture = texture_builder.diffuse(include_bytes!("images/jml.png"), "happytree");
+    let texture = texture_builder.diffuse(include_bytes!("images/cover.jpg"), "cover");
 
     let pipeline = pipeline::PipelineBuilder::new()
       .vertex_shader(include_str!("shaders/shader.vert"), "shader.vert")

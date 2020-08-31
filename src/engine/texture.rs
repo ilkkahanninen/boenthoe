@@ -16,9 +16,19 @@ impl<'a, T> TextureBuilder<'a, T> {
   }
 
   pub fn diffuse(&mut self, bytes: &[u8], label: &str) -> wgpu::BindGroup {
-    let image = image::load_from_memory(bytes).unwrap();
-    let rgba = image.as_rgba8().unwrap();
-    let dimensions = image.dimensions();
+    let (rgba, dimensions) = {
+      let image = image::load_from_memory(bytes).expect("Failed to load image from memory");
+      let buffer_dimensions = BufferDimensions::new(&image.dimensions());
+      let rgba = image
+        .resize_exact(
+          buffer_dimensions.padded_width,
+          image.dimensions().1,
+          image::imageops::FilterType::Lanczos3,
+        )
+        .into_rgba();
+      let dimensions = rgba.dimensions();
+      (rgba, dimensions)
+    };
 
     let size = wgpu::Extent3d {
       width: dimensions.0,
@@ -52,7 +62,6 @@ impl<'a, T> TextureBuilder<'a, T> {
         label: Some("texture_buffer_copy_encoder"),
       });
 
-    // TODO: Calculate padded bytes
     encoder.copy_buffer_to_texture(
       wgpu::BufferCopyView {
         buffer: &buffer,
@@ -134,5 +143,32 @@ impl<'a, T> TextureBuilder<'a, T> {
         ],
         label: Some("texture_bind_group_layout"),
       })
+  }
+}
+
+#[derive(Debug)]
+struct BufferDimensions {
+  width: u32,
+  height: u32,
+  unpadded_bytes_per_row: u32,
+  padded_bytes_per_row: u32,
+  padded_width: u32,
+}
+
+impl BufferDimensions {
+  fn new(dimensions: &(u32, u32)) -> Self {
+    let bytes_per_pixel = std::mem::size_of::<u32>() as u32;
+    let unpadded_bytes_per_row = dimensions.0 * (bytes_per_pixel);
+    let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
+    let padded_bytes_per_row_padding = (align - unpadded_bytes_per_row % align) % align;
+    let padded_bytes_per_row = unpadded_bytes_per_row + padded_bytes_per_row_padding;
+    let padded_width = padded_bytes_per_row / bytes_per_pixel;
+    Self {
+      width: dimensions.0,
+      height: dimensions.1,
+      unpadded_bytes_per_row,
+      padded_bytes_per_row,
+      padded_width,
+    }
   }
 }
