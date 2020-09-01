@@ -201,7 +201,9 @@ impl renderer::Renderer<State> for TestEffect {
     }
 }
 
-pub fn init(window: &winit::window::Window) -> engine::Engine<State> {
+pub fn init(window: &mut winit::window::Window) -> engine::Engine<State> {
+    window.set_title("Engine development playground");
+
     let state = create_state!(State {
       cam_x => Envelope::linear(8.0, 0.0, 1.0),
       cam_y => Envelope::linear(8.0, 1.0, 0.0),
