@@ -4,6 +4,7 @@ use cgmath::*;
 #[derive(Debug, Copy, Clone)]
 pub struct Transform(Matrix4<f32>);
 
+#[allow(dead_code)]
 impl Transform {
     pub fn new() -> Self {
         Self(Matrix4::<f32>::identity())
@@ -17,12 +18,12 @@ impl Transform {
         Self(self.0 * Matrix4::from_scale(factor))
     }
 
-    pub fn scale_xyz(mut self, x: f32, y: f32, z: f32) -> Self {
+    pub fn scale_xyz(&self, x: f32, y: f32, z: f32) -> Self {
         Self(self.0 * Matrix4::from_nonuniform_scale(x, y, z))
     }
 
     pub fn rotate<A: Into<Rad<f32>>>(
-        mut self,
+        &self,
         axis_x: f32,
         axis_y: f32,
         axis_z: f32,

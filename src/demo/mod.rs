@@ -79,6 +79,7 @@ struct TestEffect {
     instances: Vec<transform::Transform>,
     instance_buffer: wgpu::Buffer,
     instance_bind_group: wgpu::BindGroup,
+    depth_buffer: wgpu::TextureView,
 }
 
 impl TestEffect {
@@ -102,10 +103,15 @@ impl TestEffect {
         let mut texture_builder = texture::TextureBuilder::new(engine);
         let texture = texture_builder.diffuse(include_bytes!("images/cover.jpg"), "cover");
 
+        let depth_buffer = texture_builder.depth_stencil_buffer("depth_buffer");
+
         // Instance buffer
         let instances = vec![
-            transform::Transform::new().scale(0.5),
-            transform::Transform::new().translate(0.5, 0.5, 0.5),
+            transform::Transform::new().scale(1.5),
+            transform::Transform::new().translate(0.51, 0.52, 0.53),
+            transform::Transform::new().translate(-0.56, -0.55, -0.54),
+            transform::Transform::new().translate(0.57, -0.58, 0.2),
+            transform::Transform::new().translate(-0.49, 0.59, 0.1),
         ];
         let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             contents: bytemuck::cast_slice(&instances),
@@ -136,6 +142,7 @@ impl TestEffect {
         });
 
         let pipeline = pipeline::PipelineBuilder::new()
+            .enable_depth_stencil_buffer()
             .vertex_shader(include_str!("shaders/shader.vert"), "shader.vert")
             .fragment_shader(include_str!("shaders/shader.frag"), "shader.frag")
             .add_vertex_buffer_descriptor(Vertex::desc())
@@ -155,6 +162,7 @@ impl TestEffect {
             instances,
             instance_buffer,
             instance_bind_group,
+            depth_buffer,
         })
     }
 }
@@ -188,7 +196,14 @@ impl renderer::Renderer<State> for TestEffect {
                     store: true,
                 },
             }],
-            depth_stencil_attachment: None,
+            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
+                attachment: &self.depth_buffer,
+                depth_ops: Some(wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(1.0),
+                    store: true,
+                }),
+                stencil_ops: None,
+            }),
         });
 
         render_pass.set_pipeline(&self.pipeline);
@@ -203,9 +218,9 @@ impl renderer::Renderer<State> for TestEffect {
 
 pub fn init(window: &mut winit::window::Window) -> engine::Engine<State> {
     let state = create_state!(State {
-      cam_x => Envelope::linear(8.0, 0.0, 1.0),
-      cam_y => Envelope::linear(8.0, 1.0, 0.0),
-      cam_z => Envelope::linear(8.0, 1.0, 0.0)
+      cam_x => Envelope::infinite(Envelope::linear(12.0, 4.0, 2.0)),
+      cam_y => Envelope::infinite(Envelope::linear(8.0, 6.0, 2.0)),
+      cam_z => Envelope::infinite(Envelope::linear(15.0, 7.0, 2.0))
     });
 
     let mut engine = block_on(engine::Engine::new(window, Box::new(state)));
