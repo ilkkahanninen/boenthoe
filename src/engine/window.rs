@@ -5,25 +5,49 @@ use winit::{
     window::WindowBuilder,
 };
 
+pub struct WindowProperties<'a> {
+    pub title: &'a str,
+    pub size: winit::dpi::PhysicalSize<u32>,
+    pub fullscreen: bool,
+}
+
 pub struct Window {
     pub window: winit::window::Window,
     pub event_loop: winit::event_loop::EventLoop<()>,
+    pub size: winit::dpi::PhysicalSize<u32>,
 }
 
 impl Window {
-    pub fn new() -> Self {
+    pub fn new(properties: &WindowProperties) -> Self {
         let event_loop = EventLoop::new();
         let window = WindowBuilder::new()
-            .with_title("Boenthoe")
+            .with_title(properties.title)
+            .with_resizable(false)
+            .with_inner_size(properties.size)
             .build(&event_loop)
             .unwrap();
-        Window { window, event_loop }
+
+        if properties.fullscreen {
+            window.set_fullscreen(Some(winit::window::Fullscreen::Borderless(
+                window.current_monitor(),
+            )));
+        }
+
+        Window {
+            window,
+            event_loop,
+            size: properties.size,
+        }
     }
 
     pub fn run<T: 'static>(self, mut engine: engine::Engine<T>) {
-        let Window { window, event_loop } = self;
+        let Window {
+            window,
+            event_loop,
+            size: _,
+        } = self;
 
-        engine.start();
+        engine.init();
         event_loop.run(move |event, _, control_flow| match event {
             Event::WindowEvent {
                 ref event,
@@ -41,13 +65,6 @@ impl Window {
 
                             _ => {}
                         },
-                        WindowEvent::Resized(physical_size) => {
-                            engine.resize(*physical_size);
-                        }
-                        WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                            // new_inner_size is &mut so we have to dereference it twice
-                            engine.resize(**new_inner_size);
-                        }
                         _ => {}
                     }
                 }

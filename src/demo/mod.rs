@@ -123,7 +123,7 @@ impl TestEffect {
                         readonly: true,
                         min_binding_size: None,
                     },
-                    count: None, //std::num::NonZeroU32::new(instances.len() as u32),
+                    count: None,
                 }],
             });
         let instance_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -170,7 +170,7 @@ impl renderer::Renderer<State> for TestEffect {
                 .into(),
             target: (0.0, 0.0, 0.0).into(),
             up: cgmath::Vector3::unit_y(),
-            aspect: 1.0, // TODO: Calculate correct aspect ratio
+            aspect: ctx.screen_size.width as f32 / ctx.screen_size.height as f32,
             fovy: 45.0,
             znear: 0.1,
             zfar: 100.0,
@@ -202,8 +202,6 @@ impl renderer::Renderer<State> for TestEffect {
 }
 
 pub fn init(window: &mut winit::window::Window) -> engine::Engine<State> {
-    window.set_title("Engine development playground");
-
     let state = create_state!(State {
       cam_x => Envelope::linear(8.0, 0.0, 1.0),
       cam_y => Envelope::linear(8.0, 1.0, 0.0),
