@@ -152,7 +152,7 @@ impl<'a> PipelineBuilder<'a> {
 
             // Vertex state
             vertex_state: wgpu::VertexStateDescriptor {
-                index_format: wgpu::IndexFormat::Uint16,
+                index_format: wgpu::IndexFormat::Uint32,
                 vertex_buffers: &self.vertex_buffer_descriptors,
             },
 

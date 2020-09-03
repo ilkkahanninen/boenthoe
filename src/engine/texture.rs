@@ -4,6 +4,12 @@ use wgpu::util::DeviceExt;
 
 pub const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
 
+pub struct Texture {
+    pub bind_group: wgpu::BindGroup,
+    pub sampler: wgpu::Sampler,
+    pub view: wgpu::TextureView,
+}
+
 pub struct TextureBuilder<'a, T> {
     pub engine: &'a engine::Engine<T>,
     pub command_buffers: Vec<wgpu::CommandBuffer>,
@@ -17,7 +23,7 @@ impl<'a, T> TextureBuilder<'a, T> {
         }
     }
 
-    pub fn diffuse(&mut self, bytes: &[u8], label: &str) -> wgpu::BindGroup {
+    pub fn diffuse(&mut self, bytes: &[u8], label: &str) -> Texture {
         let (rgba, dimensions) = {
             let image = image::load_from_memory(bytes).expect("Failed to load image from memory");
             let buffer_dimensions = BufferDimensions::new(&image.dimensions());
@@ -117,7 +123,11 @@ impl<'a, T> TextureBuilder<'a, T> {
 
         self.command_buffers.push(encoder.finish());
 
-        diffuse_bind_group
+        Texture {
+            bind_group: diffuse_bind_group,
+            sampler: diffuse_sampler,
+            view: diffuse_texture_view,
+        }
     }
 
     pub fn diffuse_bind_group_layout(&self) -> wgpu::BindGroupLayout {
