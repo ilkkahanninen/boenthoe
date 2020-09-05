@@ -6,7 +6,7 @@ pub struct PipelineBuilder<'a> {
     fragment_shader: Option<ShaderScript<'a>>,
     vertex_buffer_descriptors: Vec<wgpu::VertexBufferDescriptor<'a>>,
     command_buffers: Vec<wgpu::CommandBuffer>,
-    bind_group_layouts: Vec<wgpu::BindGroupLayout>,
+    bind_group_layouts: Vec<&'a wgpu::BindGroupLayout>,
     depth_stencil_buffer_enabled: bool,
 }
 
@@ -62,7 +62,7 @@ impl<'a> PipelineBuilder<'a> {
         self
     }
 
-    pub fn add_bind_group_layout(mut self, bind_group_layout: wgpu::BindGroupLayout) -> Self {
+    pub fn add_bind_group_layout(mut self, bind_group_layout: &'a wgpu::BindGroupLayout) -> Self {
         self.bind_group_layouts.push(bind_group_layout);
         self
     }
@@ -78,11 +78,9 @@ impl<'a> PipelineBuilder<'a> {
         // Create pipeline layout and attach bind group layouts to it
         println!("Create layout");
         let render_pipeline_layout = {
-            let bind_group_layouts: Vec<&wgpu::BindGroupLayout> =
-                self.bind_group_layouts.iter().collect();
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("pipeline_layout"),
-                bind_group_layouts: &bind_group_layouts,
+                bind_group_layouts: &self.bind_group_layouts,
                 push_constant_ranges: &[],
             })
         };

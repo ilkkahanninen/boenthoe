@@ -96,13 +96,8 @@ impl<T> Engine<T> {
         let state = (self.get_state)(&time);
         for renderer in self.renderers.iter_mut() {
             if renderer.should_render(time) {
-                renderer.update(&renderer::UpdateContext {
-                    time: &time,
-                    device: &self.device,
-                    state: &state,
-                    screen_size: &self.size,
-                });
                 renderer.render(&mut renderer::RenderingContext {
+                    time: &time,
                     device: &self.device,
                     encoder: &mut encoder,
                     output: &frame.output.view,
