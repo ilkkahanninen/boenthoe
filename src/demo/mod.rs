@@ -21,6 +21,7 @@ struct TestEffect {
     instance_buffer: wgpu::Buffer,
     instance_bind_group: wgpu::BindGroup,
     depth_buffer: wgpu::TextureView,
+    lights: light::Lights,
 }
 
 impl TestEffect {
@@ -87,14 +88,17 @@ impl TestEffect {
             }],
         });
 
+        let lights = light::Lights::new(device, light::LightModel::default());
+
         let pipeline = pipeline::PipelineBuilder::new()
             .enable_depth_stencil_buffer()
             .vertex_shader(include_str!("shaders/shader.vert"), "shader.vert")
             .fragment_shader(include_str!("shaders/shader.frag"), "shader.frag")
             .add_vertex_buffer_descriptor(model::ModelVertex::desc())
-            .add_bind_group_layout(uniforms::Uniforms::create_bind_group_layout(device))
-            .add_bind_group_layout(texture_builder.diffuse_bind_group_layout())
-            .add_bind_group_layout(instance_bind_group_layout)
+            .add_bind_group_layout(&uniforms::Uniforms::create_bind_group_layout(device))
+            .add_bind_group_layout(&texture_builder.diffuse_bind_group_layout())
+            .add_bind_group_layout(&instance_bind_group_layout)
+            .add_bind_group_layout(&lights.bind_group_layout)
             .add_command_buffers(texture_builder.command_buffers)
             .build(engine);
 
@@ -107,12 +111,14 @@ impl TestEffect {
             instance_buffer,
             instance_bind_group,
             depth_buffer,
+            lights,
         })
     }
 }
 
 impl renderer::Renderer<State> for TestEffect {
-    fn update(&mut self, ctx: &renderer::UpdateContext<State>) {
+    fn render(&mut self, ctx: &mut renderer::RenderingContext<State>) {
+        // Update
         self.uniforms.update_view_proj(&camera::Camera {
             eye: (
                 ctx.state.cam_x as f32,
@@ -128,15 +134,24 @@ impl renderer::Renderer<State> for TestEffect {
             zfar: 100.0,
         });
         self.uniforms_bind_group = self.uniforms.create_bind_group(ctx.device);
-    }
 
-    fn render(&self, ctx: &mut renderer::RenderingContext<State>) {
+        self.lights.light.position.x = (*ctx.time as f32 * 0.1).sin() * 3.0;
+        self.lights.light.position.y = (*ctx.time as f32 * 0.13).sin() * 3.0;
+        self.lights.light.position.z = (*ctx.time as f32 * 0.12).cos() * 3.0;
+        self.lights.update(ctx.device, ctx.encoder);
+
+        // Create render pass
         let mut render_pass = ctx.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                 attachment: ctx.output,
                 resolve_target: None,
                 ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color::BLUE),
+                    load: wgpu::LoadOp::Clear(wgpu::Color {
+                        r: 0.01,
+                        g: 0.01,
+                        b: 0.01,
+                        a: 1.0,
+                    }),
                     store: true,
                 },
             }],
@@ -157,6 +172,7 @@ impl renderer::Renderer<State> for TestEffect {
         render_pass.set_bind_group(0, &self.uniforms_bind_group, &[]);
         render_pass.set_bind_group(1, &material.diffuse_texture.bind_group, &[]);
         render_pass.set_bind_group(2, &self.instance_bind_group, &[]);
+        render_pass.set_bind_group(3, &self.lights.bind_group, &[]);
         render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
         render_pass.set_index_buffer(mesh.index_buffer.slice(..));
         render_pass.draw_indexed(0..mesh.num_elements, 0, 0..self.instances.len() as _);

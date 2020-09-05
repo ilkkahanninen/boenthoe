@@ -1,5 +1,6 @@
 pub mod camera;
 pub mod engine;
+pub mod light;
 pub mod model;
 pub mod pipeline;
 pub mod renderer;
