@@ -8,4 +8,5 @@ pub mod texture;
 pub mod timer;
 pub mod transform;
 pub mod uniforms;
+pub mod viewobject;
 pub mod window;
