@@ -2,7 +2,22 @@ use crate::engine::*;
 use tobj;
 use wgpu::util::DeviceExt;
 
-pub type Resources<'a> = std::collections::HashMap<String, Vec<u8>>;
+pub type Resources = std::collections::HashMap<String, Vec<u8>>;
+
+#[macro_export]
+macro_rules! include_resources {
+    ($($k:expr),*) => {{
+        let mut resources = model::Resources::new();
+        $(
+            let file_name = std::path::Path::new($k).file_name().expect("Invalid file path");
+            resources.insert(
+                String::from(file_name.to_str().unwrap()),
+                include_bytes!($k).to_vec(),
+            );
+        )*
+        (resources)
+    }};
+}
 
 pub trait Vertex {
     fn desc<'a>() -> wgpu::VertexBufferDescriptor<'a>;

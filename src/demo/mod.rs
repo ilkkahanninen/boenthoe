@@ -2,6 +2,7 @@ use crate::create_state;
 use crate::engine::model::Vertex;
 use crate::engine::object::Object;
 use crate::engine::*;
+use crate::include_resources;
 use crate::scripting::*;
 use futures::executor::block_on;
 
@@ -25,16 +26,7 @@ impl TestEffect {
     fn new<T>(engine: &engine::Engine<T>) -> Box<Self> {
         let device = &engine.device;
 
-        // TODO: Nice macro to map all resources
-        let mut resources = model::Resources::new();
-        resources.insert(
-            String::from("cube.mtl"),
-            include_bytes!("assets/cube.mtl").to_vec(),
-        );
-        resources.insert(
-            String::from("cube-diffuse.jpg"),
-            include_bytes!("assets/cube-diffuse.jpg").to_vec(),
-        );
+        let resources = include_resources!("assets/cube.mtl", "assets/cube-diffuse.jpg");
 
         let view = view::ViewObject::new(
             device,
