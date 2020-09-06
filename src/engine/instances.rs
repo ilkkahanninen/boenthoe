@@ -1,4 +1,4 @@
-use crate::engine::{transform::Transform, viewobject::ViewObject};
+use crate::engine::{object::Object, transform::Transform};
 use wgpu::util::DeviceExt;
 
 #[derive(Debug, Copy, Clone)]
@@ -92,7 +92,7 @@ impl InstanceListObject {
     }
 }
 
-impl ViewObject for InstanceListObject {
+impl Object for InstanceListObject {
     fn get_layout(&self) -> &wgpu::BindGroupLayout {
         &self.bind_group_layout
     }

@@ -1,4 +1,4 @@
-pub trait ViewObject {
+pub trait Object {
     fn get_bind_group(&self) -> &wgpu::BindGroup;
 
     fn get_layout(&self) -> &wgpu::BindGroupLayout;

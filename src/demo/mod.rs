@@ -1,6 +1,6 @@
 use crate::create_state;
 use crate::engine::model::Vertex;
-use crate::engine::viewobject::ViewObject;
+use crate::engine::object::Object;
 use crate::engine::*;
 use crate::scripting::*;
 use futures::executor::block_on;
@@ -15,9 +15,8 @@ pub struct State {
 struct TestEffect {
     pipeline: wgpu::RenderPipeline,
     model: model::Model,
-    uniforms: uniforms::Uniforms,
-    uniforms_bind_group: wgpu::BindGroup,
     depth_buffer: wgpu::TextureView,
+    view: view::ViewObject,
     instances: instances::InstanceListObject,
     light: light::LightObject,
 }
@@ -37,7 +36,20 @@ impl TestEffect {
             include_bytes!("assets/cube-diffuse.jpg").to_vec(),
         );
 
-        let uniforms = uniforms::Uniforms::new();
+        let view = view::ViewObject::new(
+            device,
+            view::ViewModel {
+                camera: camera::Camera {
+                    eye: (0.0, 0.0, -10.0).into(),
+                    target: (0.0, 0.0, 0.0).into(),
+                    up: cgmath::Vector3::unit_y(),
+                    aspect: engine.size.width as f32 / engine.size.height as f32,
+                    fovy: 45.0,
+                    znear: 0.1,
+                    zfar: 100.0,
+                },
+            },
+        );
 
         let mut texture_builder = texture::TextureBuilder::new(engine);
         let model = model::Model::load_obj_buf(
@@ -61,7 +73,7 @@ impl TestEffect {
             .vertex_shader(include_str!("shaders/shader.vert"), "shader.vert")
             .fragment_shader(include_str!("shaders/shader.frag"), "shader.frag")
             .add_vertex_buffer_descriptor(model::ModelVertex::desc())
-            .add_bind_group_layout(&uniforms::Uniforms::create_bind_group_layout(device))
+            .add_bind_group_layout(view.get_layout())
             .add_bind_group_layout(&texture_builder.diffuse_bind_group_layout())
             .add_bind_group_layout(instances.get_layout())
             .add_bind_group_layout(light.get_layout())
@@ -71,8 +83,7 @@ impl TestEffect {
         Box::new(Self {
             pipeline,
             model,
-            uniforms,
-            uniforms_bind_group: uniforms.create_bind_group(device),
+            view,
             instances,
             depth_buffer,
             light,
@@ -83,21 +94,13 @@ impl TestEffect {
 impl renderer::Renderer<State> for TestEffect {
     fn render(&mut self, ctx: &mut renderer::RenderingContext<State>) {
         // Update
-        self.uniforms.update_view_proj(&camera::Camera {
-            eye: (
-                ctx.state.cam_x as f32,
-                ctx.state.cam_y as f32,
-                ctx.state.cam_z as f32,
-            )
-                .into(),
-            target: (0.0, 0.0, 0.0).into(),
-            up: cgmath::Vector3::unit_y(),
-            aspect: ctx.screen_size.width as f32 / ctx.screen_size.height as f32,
-            fovy: 45.0,
-            znear: 0.1,
-            zfar: 100.0,
-        });
-        self.uniforms_bind_group = self.uniforms.create_bind_group(ctx.device);
+        self.view.model.camera.eye = (
+            ctx.state.cam_x as f32,
+            ctx.state.cam_y as f32,
+            ctx.state.cam_z as f32,
+        )
+            .into();
+        self.view.update(ctx.device, ctx.encoder);
 
         self.light.model.position.x = (*ctx.time as f32 * 0.1).sin() * 10.0;
         self.light.model.position.y = (*ctx.time as f32 * 0.13).sin() * 10.0;
@@ -146,7 +149,7 @@ impl renderer::Renderer<State> for TestEffect {
         let material = &self.model.materials[0];
 
         render_pass.set_pipeline(&self.pipeline);
-        render_pass.set_bind_group(0, &self.uniforms_bind_group, &[]);
+        render_pass.set_bind_group(0, self.view.get_bind_group(), &[]);
         render_pass.set_bind_group(1, &material.diffuse_texture.bind_group, &[]);
         render_pass.set_bind_group(2, self.instances.get_bind_group(), &[]);
         render_pass.set_bind_group(3, self.light.get_bind_group(), &[]);

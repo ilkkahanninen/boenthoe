@@ -1,4 +1,4 @@
-use crate::engine::viewobject::ViewObject;
+use crate::engine::object::Object;
 use wgpu::util::DeviceExt;
 
 #[derive(Debug, Copy, Clone)]
@@ -114,7 +114,7 @@ impl LightObject {
     }
 }
 
-impl ViewObject for LightObject {
+impl Object for LightObject {
     fn get_layout(&self) -> &wgpu::BindGroupLayout {
         &self.bind_group_layout
     }
