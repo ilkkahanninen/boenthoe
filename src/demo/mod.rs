@@ -4,7 +4,6 @@ use crate::engine::viewobject::ViewObject;
 use crate::engine::*;
 use crate::scripting::*;
 use futures::executor::block_on;
-use wgpu::util::DeviceExt;
 
 pub struct State {
     cam_x: f64,
@@ -18,10 +17,8 @@ struct TestEffect {
     model: model::Model,
     uniforms: uniforms::Uniforms,
     uniforms_bind_group: wgpu::BindGroup,
-    instances: Vec<transform::Transform>,
-    instance_buffer: wgpu::Buffer,
-    instance_bind_group: wgpu::BindGroup,
     depth_buffer: wgpu::TextureView,
+    instances: instances::InstanceListObject,
     light: light::LightObject,
 }
 
@@ -54,40 +51,8 @@ impl TestEffect {
         let depth_buffer = texture_builder.depth_stencil_buffer("depth_buffer");
 
         // Instance buffer
-        let instances = vec![
-            transform::Transform::new(),
-            transform::Transform::new().translate(5.1, 5.2, 5.3),
-            transform::Transform::new().translate(-5.6, -5.5, -5.4),
-            transform::Transform::new().translate(5.7, -5.8, 2.2),
-            transform::Transform::new().translate(-4.9, 5.9, 1.1),
-        ];
-        let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            contents: bytemuck::cast_slice(&instances),
-            usage: wgpu::BufferUsage::STORAGE,
-            label: None,
-        });
-        let instance_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("instance_bind_group_layout"),
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStage::VERTEX,
-                    ty: wgpu::BindingType::StorageBuffer {
-                        dynamic: false,
-                        readonly: true,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                }],
-            });
-        let instance_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("instance_bind_group"),
-            layout: &instance_bind_group_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: wgpu::BindingResource::Buffer(instance_buffer.slice(..)),
-            }],
-        });
+        let instances =
+            instances::InstanceListObject::new(device, vec![instances::InstanceModel::new(); 10]);
 
         let light = light::LightObject::new(device, light::LightModel::default());
 
@@ -98,7 +63,7 @@ impl TestEffect {
             .add_vertex_buffer_descriptor(model::ModelVertex::desc())
             .add_bind_group_layout(&uniforms::Uniforms::create_bind_group_layout(device))
             .add_bind_group_layout(&texture_builder.diffuse_bind_group_layout())
-            .add_bind_group_layout(&instance_bind_group_layout)
+            .add_bind_group_layout(instances.get_layout())
             .add_bind_group_layout(light.get_layout())
             .add_command_buffers(texture_builder.command_buffers)
             .build(engine);
@@ -109,8 +74,6 @@ impl TestEffect {
             uniforms,
             uniforms_bind_group: uniforms.create_bind_group(device),
             instances,
-            instance_buffer,
-            instance_bind_group,
             depth_buffer,
             light,
         })
@@ -136,10 +99,23 @@ impl renderer::Renderer<State> for TestEffect {
         });
         self.uniforms_bind_group = self.uniforms.create_bind_group(ctx.device);
 
-        self.light.model.position.x = (*ctx.time as f32 * 0.1).sin() * 3.0;
-        self.light.model.position.y = (*ctx.time as f32 * 0.13).sin() * 3.0;
-        self.light.model.position.z = (*ctx.time as f32 * 0.12).cos() * 3.0;
+        self.light.model.position.x = (*ctx.time as f32 * 0.1).sin() * 10.0;
+        self.light.model.position.y = (*ctx.time as f32 * 0.13).sin() * 10.0;
+        self.light.model.position.z = (*ctx.time as f32 * 0.12).cos() * 10.0;
         self.light.update(ctx.device, ctx.encoder);
+
+        for (index, instance) in self.instances.models.iter_mut().enumerate() {
+            let a = index as f32 + 0.1;
+            instance.transform = transform::Transform::new()
+                .translate((a * 1.2).sin(), (a * 1.3).cos(), (a * 0.7).sin() - a.cos())
+                .rotate(
+                    a.sin(),
+                    a.cos(),
+                    a.sin() - a.cos(),
+                    cgmath::Rad(a * (*ctx.time as f32) * 0.2),
+                )
+        }
+        self.instances.update(ctx.device, ctx.encoder);
 
         // Create render pass
         let mut render_pass = ctx.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -172,11 +148,11 @@ impl renderer::Renderer<State> for TestEffect {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.uniforms_bind_group, &[]);
         render_pass.set_bind_group(1, &material.diffuse_texture.bind_group, &[]);
-        render_pass.set_bind_group(2, &self.instance_bind_group, &[]);
+        render_pass.set_bind_group(2, self.instances.get_bind_group(), &[]);
         render_pass.set_bind_group(3, self.light.get_bind_group(), &[]);
         render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
         render_pass.set_index_buffer(mesh.index_buffer.slice(..));
-        render_pass.draw_indexed(0..mesh.num_elements, 0, 0..self.instances.len() as _);
+        render_pass.draw_indexed(0..mesh.num_elements, 0, self.instances.all());
     }
 }
 
