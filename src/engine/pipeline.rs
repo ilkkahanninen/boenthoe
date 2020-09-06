@@ -62,8 +62,13 @@ impl<'a> PipelineBuilder<'a> {
         self
     }
 
-    pub fn add_bind_group_layout(mut self, bind_group_layout: &'a wgpu::BindGroupLayout) -> Self {
-        self.bind_group_layouts.push(bind_group_layout);
+    pub fn add_bind_group_layouts(
+        mut self,
+        bind_group_layouts: &'a [&'a wgpu::BindGroupLayout],
+    ) -> Self {
+        for layout in bind_group_layouts.iter() {
+            self.bind_group_layouts.push(layout);
+        }
         self
     }
 

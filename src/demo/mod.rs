@@ -73,10 +73,12 @@ impl TestEffect {
             .vertex_shader(include_str!("shaders/shader.vert"), "shader.vert")
             .fragment_shader(include_str!("shaders/shader.frag"), "shader.frag")
             .add_vertex_buffer_descriptor(model::ModelVertex::desc())
-            .add_bind_group_layout(view.get_layout())
-            .add_bind_group_layout(&texture_builder.diffuse_bind_group_layout())
-            .add_bind_group_layout(instances.get_layout())
-            .add_bind_group_layout(light.get_layout())
+            .add_bind_group_layouts(&[
+                view.get_layout(),
+                &texture_builder.diffuse_bind_group_layout(),
+                instances.get_layout(),
+                light.get_layout(),
+            ])
             .add_command_buffers(texture_builder.command_buffers)
             .build(engine);
 
