@@ -2,11 +2,11 @@ pub trait Renderer<T> {
     fn should_render(&self, _time: f64) -> bool {
         true
     }
+    fn update(&mut self, context: &mut RenderingContext<T>);
     fn render(&mut self, context: &mut RenderingContext<T>);
 }
 
 pub struct RenderingContext<'a, T> {
-    pub time: &'a f64, // TODO: Deprecate this, state can hold the time
     pub device: &'a wgpu::Device,
     pub encoder: &'a mut wgpu::CommandEncoder,
     pub output: &'a wgpu::TextureView,
