@@ -13,6 +13,7 @@ pub struct Engine<T> {
     pub renderers: Vec<Box<dyn renderer::Renderer<T>>>,
     pub get_state: Box<dyn Fn(&f64) -> T>,
     pub timer: timer::Timer,
+    pub music: Option<music::Music>,
 }
 
 impl<T> Engine<T> {
@@ -65,18 +66,52 @@ impl<T> Engine<T> {
             get_state,
             renderers: vec![],
             timer: timer::Timer::new(),
+            music: None,
         }
+    }
+
+    pub fn set_music(&mut self, bytes: &[u8]) {
+        self.music = Some(music::Music::from_bytes(bytes));
     }
 
     pub fn add_renderer(&mut self, renderer: Box<dyn renderer::Renderer<T>>) {
         self.renderers.push(renderer);
     }
 
-    pub fn input(&mut self, _event: &WindowEvent) -> bool {
+    pub fn input(&mut self, event: &WindowEvent) -> bool {
+        const REWIND_AMOUNT: f32 = 10.0;
+
+        match event {
+            WindowEvent::KeyboardInput { input, .. } => match input {
+                KeyboardInput {
+                    state: ElementState::Pressed,
+                    virtual_keycode: Some(VirtualKeyCode::Left),
+                    ..
+                } => {
+                    self.forward(-REWIND_AMOUNT);
+                    return true;
+                }
+
+                KeyboardInput {
+                    state: ElementState::Pressed,
+                    virtual_keycode: Some(VirtualKeyCode::Right),
+                    ..
+                } => {
+                    self.forward(REWIND_AMOUNT);
+                    return true;
+                }
+
+                _ => {}
+            },
+            _ => {}
+        }
         false
     }
 
     pub fn init(&mut self) {
+        if let Some(music) = self.music.as_mut() {
+            music.play();
+        }
         self.timer.reset();
     }
 
@@ -110,5 +145,12 @@ impl<T> Engine<T> {
         }
 
         self.queue.submit(vec![encoder.finish()]);
+    }
+
+    pub fn forward(&mut self, seconds: f32) {
+        if let Some(music) = self.music.as_mut() {
+            music.forward(seconds);
+        }
+        self.timer.forward(seconds as f64);
     }
 }
