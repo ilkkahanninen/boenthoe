@@ -7,6 +7,7 @@ use crate::scripting::*;
 use futures::executor::block_on;
 
 pub struct State {
+    time: f64,
     cam_x: f64,
     cam_y: f64,
     cam_z: f64,
@@ -86,8 +87,9 @@ impl TestEffect {
 }
 
 impl renderer::Renderer<State> for TestEffect {
-    fn render(&mut self, ctx: &mut renderer::RenderingContext<State>) {
-        // Update
+    fn update(&mut self, ctx: &mut renderer::RenderingContext<State>) {
+        let time = ctx.state.time as f32;
+
         self.view.model.camera.eye = (
             ctx.state.cam_x as f32,
             ctx.state.cam_y as f32,
@@ -96,9 +98,9 @@ impl renderer::Renderer<State> for TestEffect {
             .into();
         self.view.update(ctx.device, ctx.encoder);
 
-        self.light.model.position.x = (*ctx.time as f32 * 0.1).sin() * 10.0;
-        self.light.model.position.y = (*ctx.time as f32 * 0.13).sin() * 10.0;
-        self.light.model.position.z = (*ctx.time as f32 * 0.12).cos() * 10.0;
+        self.light.model.position.x = (time * 0.1).sin() * 10.0;
+        self.light.model.position.y = (time * 0.13).sin() * 10.0;
+        self.light.model.position.z = (time * 0.12).cos() * 10.0;
         self.light.update(ctx.device, ctx.encoder);
 
         for (index, instance) in self.instances.models.iter_mut().enumerate() {
@@ -109,12 +111,13 @@ impl renderer::Renderer<State> for TestEffect {
                     a.sin(),
                     a.cos(),
                     a.sin() - a.cos(),
-                    cgmath::Rad(a * (*ctx.time as f32) * 0.2),
+                    cgmath::Rad(a * time * 0.2),
                 )
         }
         self.instances.update(ctx.device, ctx.encoder);
+    }
 
-        // Create render pass
+    fn render(&mut self, ctx: &mut renderer::RenderingContext<State>) {
         let mut render_pass = ctx.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                 attachment: ctx.output,
@@ -155,9 +158,10 @@ impl renderer::Renderer<State> for TestEffect {
 
 pub fn init(window: &mut winit::window::Window) -> engine::Engine<State> {
     let state = create_state!(State {
-      cam_x => Envelope::infinite(Envelope::linear(12.0, 4.0, 2.0)),
-      cam_y => Envelope::infinite(Envelope::linear(8.0, 6.0, 2.0)),
-      cam_z => Envelope::infinite(Envelope::linear(15.0, 7.0, 2.0))
+        time => Envelope::time(),
+        cam_x => Envelope::infinite(Envelope::linear(12.0, 4.0, 2.0)),
+        cam_y => Envelope::infinite(Envelope::linear(8.0, 6.0, 2.0)),
+        cam_z => Envelope::infinite(Envelope::linear(15.0, 7.0, 2.0))
     });
 
     let mut engine = block_on(engine::Engine::new(window, Box::new(state)));

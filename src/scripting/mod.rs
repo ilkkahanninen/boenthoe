@@ -18,6 +18,13 @@ pub struct Envelope {
 
 #[allow(dead_code)]
 impl Envelope {
+    pub fn time() -> Self {
+        Self {
+            duration: std::f64::INFINITY,
+            get_value: Box::new(|time| time.clone()),
+        }
+    }
+
     pub fn hold(duration: f64, value: f64) -> Self {
         Self {
             duration,
