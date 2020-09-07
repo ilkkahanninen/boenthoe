@@ -167,5 +167,7 @@ pub fn init(window: &mut winit::window::Window) -> engine::Engine<State> {
     let mut engine = block_on(engine::Engine::new(window, Box::new(state)));
     engine.add_renderer(TestEffect::new(&engine));
 
+    engine.set_music(include_bytes!("assets/musa.mp3"));
+
     engine
 }
