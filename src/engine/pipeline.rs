@@ -1,3 +1,4 @@
+use crate::engine::object::Object;
 use crate::engine::*;
 
 #[derive(Default)]
@@ -68,6 +69,13 @@ impl<'a> PipelineBuilder<'a> {
     ) -> Self {
         for layout in bind_group_layouts.iter() {
             self.bind_group_layouts.push(layout);
+        }
+        self
+    }
+
+    pub fn bind_objects(mut self, objects: &'a [&'a dyn Object]) -> Self {
+        for object in objects.iter() {
+            self.bind_group_layouts.push(object.get_layout());
         }
         self
     }

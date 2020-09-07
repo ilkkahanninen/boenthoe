@@ -16,7 +16,7 @@ pub struct State {
 struct TestEffect {
     pipeline: wgpu::RenderPipeline,
     model: model::Model,
-    depth_buffer: wgpu::TextureView,
+    depth_buffer: texture::Texture,
     view: view::ViewObject,
     instances: instances::InstanceListObject,
     light: light::LightObject,
@@ -56,7 +56,7 @@ impl TestEffect {
 
         // Instance buffer
         let instances =
-            instances::InstanceListObject::new(device, vec![instances::InstanceModel::new(); 10]);
+            instances::InstanceListObject::new(device, vec![instances::InstanceModel::new(); 3]);
 
         let light = light::LightObject::new(device, light::LightModel::default());
 
@@ -65,11 +65,11 @@ impl TestEffect {
             .vertex_shader(include_str!("shaders/shader.vert"), "shader.vert")
             .fragment_shader(include_str!("shaders/shader.frag"), "shader.frag")
             .add_vertex_buffer_descriptor(model::ModelVertex::desc())
-            .add_bind_group_layouts(&[
-                view.get_layout(),
-                &texture_builder.diffuse_bind_group_layout(),
-                instances.get_layout(),
-                light.get_layout(),
+            .bind_objects(&[
+                &view,
+                &model.materials[0].diffuse_texture,
+                &instances,
+                &light,
             ])
             .add_command_buffers(texture_builder.command_buffers)
             .build(engine);
@@ -130,7 +130,7 @@ impl renderer::Renderer<State> for TestEffect {
                 },
             }],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
-                attachment: &self.depth_buffer,
+                attachment: &self.depth_buffer.view,
                 depth_ops: Some(wgpu::Operations {
                     load: wgpu::LoadOp::Clear(1.0),
                     store: true,
