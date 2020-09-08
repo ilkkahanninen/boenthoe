@@ -57,7 +57,7 @@ impl TestEffect {
 
         // Instance buffer
         let instances =
-            instances::InstanceListObject::new(device, vec![instances::InstanceModel::new(); 3]);
+            instances::InstanceListObject::new(device, vec![instances::InstanceModel::new(); 20]);
 
         let light = light::LightObject::new(device, light::LightModel::default());
 

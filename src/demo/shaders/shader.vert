@@ -26,7 +26,7 @@ void main() {
 
     mat4 model_matrix = s_models[gl_InstanceIndex];
     mat3 normal_matrix = mat3(transpose(inverse(model_matrix)));
-    v_normal = a_normal * normal_matrix;
+    v_normal = normal_matrix * a_normal;
 
     vec4 model_space = model_matrix  * vec4(a_position, 1.0);
     v_position = model_space.xyz;
