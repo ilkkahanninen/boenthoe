@@ -1,15 +1,16 @@
 #[macro_export]
 macro_rules! create_state {
-  ($T:ident { $($k:ident => $e:expr),* }) => {
-    {
-      Box::new(|pos: &f64| $T {
-        $(
-          $k: $e.get_value(pos),
-        )*
-      })
-    }
-  };
+    ($T:ident { $($k:ident => $e:expr),* }) => {{
+        let f: StateFn<$T> = Box::new(move |time: &f64| $T {
+            $(
+                $k: $e.get_value(time),
+            )*
+        });
+        f
+    }};
 }
+
+pub type StateFn<T> = Box<dyn Fn(&f64) -> T>;
 
 pub struct Envelope {
     pub duration: f64,
