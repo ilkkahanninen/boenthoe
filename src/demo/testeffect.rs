@@ -3,6 +3,7 @@ use crate::engine::model::Vertex;
 use crate::engine::object::Object;
 use crate::engine::*;
 use crate::include_resources;
+use std::rc::Rc;
 
 pub struct TestEffect {
     pipeline: wgpu::RenderPipeline,
@@ -11,10 +12,11 @@ pub struct TestEffect {
     view: view::ViewObject,
     instances: instances::InstanceListObject,
     light: light::LightObject,
+    output: Rc<texture::Texture>,
 }
 
 impl TestEffect {
-    pub fn new<T>(engine: &engine::Engine<T>) -> Box<Self> {
+    pub fn new<T>(engine: &engine::Engine<T>, output: Rc<texture::Texture>) -> Box<Self> {
         let device = &engine.device;
 
         let resources = include_resources!("assets/cube.mtl", "assets/cube-diffuse.jpg");
@@ -72,6 +74,7 @@ impl TestEffect {
             instances,
             depth_buffer,
             light,
+            output,
         })
     }
 }
@@ -110,7 +113,7 @@ impl renderer::Renderer<State> for TestEffect {
     fn render(&mut self, ctx: &mut renderer::RenderingContext<State>) {
         let mut render_pass = ctx.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                attachment: ctx.output,
+                attachment: &self.output.view,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {

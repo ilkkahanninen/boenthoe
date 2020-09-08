@@ -1,24 +1,22 @@
 use crate::demo::state::State;
-use crate::engine::model::Vertex;
 use crate::engine::*;
+use std::rc::Rc;
 
 pub struct Layer {
     pipeline: wgpu::RenderPipeline,
-    image: texture::Texture,
+    image: Rc<texture::Texture>,
 }
 
 impl Layer {
-    pub fn new<T>(engine: &engine::Engine<T>) -> Box<Self> {
-        let device = &engine.device;
-
-        let mut texture_builder = texture::TextureBuilder::new(engine);
-        let image = texture_builder.diffuse(include_bytes!("assets/test.png"), "test.png");
+    pub fn new<T>(engine: &engine::Engine<T>, image: Rc<texture::Texture>) -> Box<Self> {
+        // let mut texture_builder = texture::TextureBuilder::new(engine);
+        // let image = texture_builder.diffuse(include_bytes!("assets/test.png"), "test.png");
 
         let pipeline = pipeline::PipelineBuilder::new()
             .vertex_shader(include_str!("shaders/layer.vert"), "layer.vert")
             .fragment_shader(include_str!("shaders/layer.frag"), "layer.frag")
-            .bind_objects(&[&image])
-            .add_command_buffers(texture_builder.command_buffers)
+            .bind_objects(&[image.as_ref()])
+            // .add_command_buffers(texture_builder.command_buffers)
             .build(engine);
 
         Box::new(Self { pipeline, image })

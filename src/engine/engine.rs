@@ -74,6 +74,13 @@ impl<T> Engine<T> {
         self.music = Some(music::Music::from_bytes(bytes));
     }
 
+    pub fn create_render_buffer(&self) -> texture::Texture {
+        let builder = texture::TextureBuilder::new(&self);
+        let buffer = builder.color_buffer("render_buffer");
+        self.queue.submit(builder.command_buffers);
+        buffer
+    }
+
     pub fn add_renderer(&mut self, renderer: Box<dyn renderer::Renderer<T>>) {
         self.renderers.push(renderer);
     }

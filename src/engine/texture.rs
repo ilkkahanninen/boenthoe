@@ -163,6 +163,14 @@ impl<'a, T> TextureBuilder<'a, T> {
     }
 
     pub fn depth_stencil_buffer(&self, label: &str) -> Texture {
+        self.buffer(DEPTH_FORMAT, label)
+    }
+
+    pub fn color_buffer(&self, label: &str) -> Texture {
+        self.buffer(self.engine.swap_chain_descriptor.format, label)
+    }
+
+    pub fn buffer(&self, format: wgpu::TextureFormat, label: &str) -> Texture {
         let device = &self.engine.device;
         let sc_desc = &self.engine.swap_chain_descriptor;
         let size = wgpu::Extent3d {
@@ -177,7 +185,7 @@ impl<'a, T> TextureBuilder<'a, T> {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: DEPTH_FORMAT,
+            format,
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT
                 | wgpu::TextureUsage::SAMPLED
                 | wgpu::TextureUsage::COPY_SRC,
