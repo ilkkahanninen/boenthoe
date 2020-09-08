@@ -39,15 +39,18 @@ impl<'a, T> TextureBuilder<'a, T> {
         let device = &self.engine.device;
 
         let (rgba, dimensions) = {
+            println!("Load {} from memory...", label);
             let image = image::load_from_memory(bytes).expect("Failed to load image from memory");
             let buffer_dimensions = BufferDimensions::new(&image.dimensions());
+            println!("  Resize...");
             let rgba = image
                 .resize_exact(
                     buffer_dimensions.padded_width,
                     image.dimensions().1,
-                    image::imageops::FilterType::Lanczos3,
+                    image::imageops::FilterType::Triangle,
                 )
                 .into_rgba();
+            println!("  Done");
             let dimensions = rgba.dimensions();
             (rgba, dimensions)
         };
