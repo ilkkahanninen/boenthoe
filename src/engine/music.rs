@@ -1,7 +1,6 @@
 use cpal::traits::{DeviceTrait, HostTrait};
 use minimp3::{Decoder, Error, Frame};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
 
 pub struct Music {
     buffer: Arc<Vec<i16>>,
@@ -11,6 +10,7 @@ pub struct Music {
     position: Arc<Mutex<usize>>,
 }
 
+#[allow(dead_code)]
 impl Music {
     pub fn from_bytes(bytes: &[u8]) -> Self {
         let mut decoder = Decoder::new(bytes);
