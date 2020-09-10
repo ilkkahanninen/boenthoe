@@ -5,29 +5,30 @@ use crate::engine::*;
 use crate::include_resources;
 use std::rc::Rc;
 
-pub struct TestEffect {
+pub struct Titles {
     pipeline: wgpu::RenderPipeline,
     model: model::Model,
     depth_buffer: texture::Texture,
     view: view::ViewObject,
     instances: instances::InstanceListObject,
     light: light::LightObject,
+    texture: texture::Texture,
     output: Rc<texture::Texture>,
 }
 
-impl TestEffect {
+impl Titles {
     pub fn new<T>(engine: &engine::Engine<T>, output: Rc<texture::Texture>) -> Box<Self> {
         let device = &engine.device;
 
-        let resources = include_resources!("assets/cube.mtl", "assets/cube-diffuse.jpg");
+        let resources = include_resources!("assets/tekstit.mtl");
 
         let view = view::ViewObject::new(
             device,
             view::ViewModel {
                 camera: camera::Camera {
-                    eye: (0.0, 0.0, -10.0).into(),
+                    eye: (0.0, -2.0, 0.0).into(),
                     target: (0.0, 0.0, 0.0).into(),
-                    up: cgmath::Vector3::unit_y(),
+                    up: cgmath::Vector3::unit_z() * -1.0,
                     aspect: engine.size.width as f32 / engine.size.height as f32,
                     fovy: 45.0,
                     znear: 0.1,
@@ -37,9 +38,12 @@ impl TestEffect {
         );
 
         let mut texture_builder = texture::TextureBuilder::new(engine);
+        let texture =
+            texture_builder.diffuse(include_bytes!("assets/cube-diffuse.jpg"), "spheremap");
+
         let model = model::Model::load_obj_buf(
             device,
-            include_bytes!("assets/cube.obj"),
+            include_bytes!("assets/tekstit.obj"),
             &resources,
             &mut texture_builder,
         )
@@ -47,9 +51,8 @@ impl TestEffect {
 
         let depth_buffer = texture_builder.depth_stencil_buffer("depth_buffer");
 
-        // Instance buffer
         let instances =
-            instances::InstanceListObject::new(device, vec![instances::InstanceModel::new(); 20]);
+            instances::InstanceListObject::new(device, vec![instances::InstanceModel::new(); 1]);
 
         let light = light::LightObject::new(device, light::LightModel::default());
 
@@ -58,12 +61,7 @@ impl TestEffect {
             .vertex_shader(include_str!("shaders/shader.vert"), "shader.vert")
             .fragment_shader(include_str!("shaders/shader.frag"), "shader.frag")
             .add_vertex_buffer_descriptor(model::ModelVertex::desc())
-            .bind_objects(&[
-                &view,
-                model.materials[0].diffuse_texture.as_ref().unwrap(),
-                &instances,
-                &light,
-            ])
+            .bind_objects(&[&view, &texture, &instances, &light])
             .add_command_buffers(texture_builder.command_buffers)
             .build(engine);
 
@@ -75,37 +73,31 @@ impl TestEffect {
             depth_buffer,
             light,
             output,
+            texture,
         })
     }
 }
 
-impl renderer::Renderer<State> for TestEffect {
+impl renderer::Renderer<State> for Titles {
     fn update(&mut self, ctx: &mut renderer::RenderingContext<State>) {
         let time = ctx.state.time as f32;
 
-        self.view.model.camera.eye = (
-            ctx.state.cam_x as f32,
-            ctx.state.cam_y as f32,
-            ctx.state.cam_z as f32,
-        )
-            .into();
+        // self.view.model.camera.eye = (
+        //     ctx.state.cam_x as f32,
+        //     ctx.state.cam_y as f32,
+        //     ctx.state.cam_z as f32,
+        // )
+        //     .into();
         self.view.update(ctx.device, ctx.encoder);
 
-        self.light.model.position.x = (time * 0.1).sin() * 10.0;
-        self.light.model.position.y = (time * 0.13).sin() * 10.0;
-        self.light.model.position.z = (time * 0.12).cos() * 10.0;
+        self.light.model.position.x = (time * 3.0).sin() * 10.0;
+        self.light.model.position.y = 5.0;
+        self.light.model.position.z = (time * 2.0).cos() * 10.0;
         self.light.update(ctx.device, ctx.encoder);
 
-        for (index, instance) in self.instances.models.iter_mut().enumerate() {
-            let a = index as f32 + 0.1;
-            instance.transform = transform::Transform::new()
-                .translate((a * 1.2).sin(), (a * 1.3).cos(), (a * 0.7).sin() - a.cos())
-                .rotate(
-                    a.sin(),
-                    a.cos(),
-                    a.sin() - a.cos(),
-                    cgmath::Rad(a * time * 0.2),
-                )
+        for (_index, instance) in self.instances.models.iter_mut().enumerate() {
+            instance.transform =
+                transform::Transform::new().rotate(0.0, 0.0, 1.0, cgmath::Rad(time * 3.0))
         }
         self.instances.update(ctx.device, ctx.encoder);
     }
@@ -118,8 +110,8 @@ impl renderer::Renderer<State> for TestEffect {
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {
                         r: 0.01,
-                        g: 0.01,
-                        b: 0.01,
+                        g: 0.1,
+                        b: 0.12,
                         a: 1.0,
                     }),
                     store: true,
@@ -135,13 +127,11 @@ impl renderer::Renderer<State> for TestEffect {
             }),
         });
 
-        let mesh = &self.model.meshes[0];
-        let material = &self.model.materials[0];
-        let diffuse_texture = material.diffuse_texture.as_ref().unwrap();
+        let mesh = &self.model.meshes[ctx.state.time.trunc() as usize % 4];
 
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, self.view.get_bind_group(), &[]);
-        render_pass.set_bind_group(1, &diffuse_texture.bind_group, &[]);
+        render_pass.set_bind_group(1, self.texture.get_bind_group(), &[]);
         render_pass.set_bind_group(2, self.instances.get_bind_group(), &[]);
         render_pass.set_bind_group(3, self.light.get_bind_group(), &[]);
         render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));

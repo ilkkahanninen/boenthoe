@@ -68,7 +68,7 @@ pub struct Model {
 
 pub struct Material {
     pub name: String,
-    pub diffuse_texture: texture::Texture,
+    pub diffuse_texture: Option<texture::Texture>,
 }
 
 pub struct Mesh {
@@ -97,10 +97,17 @@ impl Model {
         let mut materials = Vec::new();
         for mat in obj_materials {
             let diffuse_path = mat.diffuse_texture;
-            let diffuse_texture = texture_builder.diffuse(
-                &resources.get(&diffuse_path).expect("resource not found"),
-                "diffuse_texture",
-            );
+            let diffuse_texture = if diffuse_path.is_empty() {
+                None
+            } else {
+                Some(texture_builder.diffuse(
+                    &resources.get(&diffuse_path).expect(&format!(
+                        "Resource {} is not defined in the resource object",
+                        diffuse_path
+                    )),
+                    "diffuse_texture",
+                ))
+            };
 
             materials.push(Material {
                 name: mat.name,

@@ -1,6 +1,7 @@
 mod layer;
 mod state;
 mod testeffect;
+mod titles;
 
 use crate::demo::state::State;
 use crate::engine::engine::Engine;
@@ -15,7 +16,8 @@ pub fn init(window: &mut winit::window::Window) -> Engine<state::State> {
     engine.set_music(include_bytes!("assets/musa.mp3"));
 
     let buffer = Rc::new(engine.create_render_buffer());
-    engine.add_renderer(testeffect::TestEffect::new(&engine, buffer.clone()));
+    // engine.add_renderer(testeffect::TestEffect::new(&engine, buffer.clone()));
+    engine.add_renderer(titles::Titles::new(&engine, buffer.clone()));
     engine.add_renderer(layer::Layer::new(&engine, buffer.clone()));
 
     engine
