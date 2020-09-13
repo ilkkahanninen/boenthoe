@@ -5,6 +5,8 @@ use crate::engine::*;
 use crate::include_resources;
 use std::rc::Rc;
 
+const OBJ_ORDER: [usize; 4] = [1, 0, 2, 3];
+
 pub struct Titles {
     pipeline: wgpu::RenderPipeline,
     model: model::Model,
@@ -38,8 +40,7 @@ impl Titles {
         );
 
         let mut texture_builder = texture::TextureBuilder::new(engine);
-        let texture =
-            texture_builder.diffuse(include_bytes!("assets/cube-diffuse.jpg"), "spheremap");
+        let texture = texture_builder.diffuse(include_bytes!("assets/spheremap.jpg"), "spheremap");
 
         let model = model::Model::load_obj_buf(
             device,
@@ -91,7 +92,7 @@ impl renderer::Renderer<State> for Titles {
         self.view.update(ctx.device, ctx.encoder);
 
         self.light.model.position.x = (time * 3.0).sin() * 10.0;
-        self.light.model.position.y = 5.0;
+        self.light.model.position.y = -5.0;
         self.light.model.position.z = (time * 2.0).cos() * 10.0;
         self.light.update(ctx.device, ctx.encoder);
 
@@ -122,7 +123,8 @@ impl renderer::Renderer<State> for Titles {
             }),
         });
 
-        let mesh = &self.model.meshes[ctx.state.time.trunc() as usize % 4];
+        let mesh_index = OBJ_ORDER[ctx.state.time.trunc() as usize % 4];
+        let mesh = &self.model.meshes[mesh_index];
 
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, self.view.get_bind_group(), &[]);
