@@ -9,6 +9,7 @@ pub struct PipelineBuilder<'a> {
     command_buffers: Vec<wgpu::CommandBuffer>,
     bind_group_layouts: Vec<&'a wgpu::BindGroupLayout>,
     depth_stencil_buffer_enabled: bool,
+    cull_mode: wgpu::CullMode,
 }
 
 #[derive(Copy, Clone)]
@@ -21,7 +22,7 @@ pub struct ShaderScript<'a> {
 #[allow(dead_code)]
 impl<'a> PipelineBuilder<'a> {
     pub fn new() -> Self {
-        Self::default()
+        Self::default().set_cull_mode(wgpu::CullMode::Back)
     }
 
     pub fn vertex_shader(mut self, glsl: &'a str, label: &'a str) -> Self {
@@ -82,6 +83,11 @@ impl<'a> PipelineBuilder<'a> {
 
     pub fn enable_depth_stencil_buffer(mut self) -> Self {
         self.depth_stencil_buffer_enabled = true;
+        self
+    }
+
+    pub fn set_cull_mode(mut self, cull_mode: wgpu::CullMode) -> Self {
+        self.cull_mode = cull_mode;
         self
     }
 

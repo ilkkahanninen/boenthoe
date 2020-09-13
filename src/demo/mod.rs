@@ -1,5 +1,6 @@
 mod background;
 mod layer;
+mod postprocess;
 mod state;
 mod testeffect;
 mod titles;
@@ -20,7 +21,8 @@ pub fn init(window: &mut winit::window::Window) -> Engine<state::State> {
     engine.add_renderer(background::Background::new(&engine, buffer.clone()));
     // engine.add_renderer(testeffect::TestEffect::new(&engine, buffer.clone()));
     engine.add_renderer(titles::Titles::new(&engine, buffer.clone()));
-    engine.add_renderer(layer::Layer::new(&engine, buffer.clone()));
+    // engine.add_renderer(layer::Layer::new(&engine, buffer.clone()));
+    engine.add_renderer(postprocess::PostProcess::new(&engine, buffer.clone()));
 
     engine
 }

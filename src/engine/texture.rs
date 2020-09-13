@@ -42,14 +42,21 @@ impl<'a, T> TextureBuilder<'a, T> {
             println!("Load {} from memory...", label);
             let image = image::load_from_memory(bytes).expect("Failed to load image from memory");
             let buffer_dimensions = BufferDimensions::new(&image.dimensions());
-            println!("  Resize...");
-            let rgba = image
-                .resize_exact(
+            let rgba = (if buffer_dimensions.resizing_needed() {
+                let height = image.dimensions().1;
+                println!(
+                    "  Resize to {}x{}...",
+                    &buffer_dimensions.padded_width, height
+                );
+                image.resize_exact(
                     buffer_dimensions.padded_width,
-                    image.dimensions().1,
+                    height,
                     image::imageops::FilterType::Triangle,
                 )
-                .into_rgba();
+            } else {
+                image
+            })
+            .into_rgba();
             println!("  Done");
             let dimensions = rgba.dimensions();
             (rgba, dimensions)
@@ -277,5 +284,9 @@ impl BufferDimensions {
             padded_bytes_per_row,
             padded_width,
         }
+    }
+
+    fn resizing_needed(&self) -> bool {
+        self.width != self.padded_width
     }
 }
