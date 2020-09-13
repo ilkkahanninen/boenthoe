@@ -26,7 +26,7 @@ impl Titles {
             device,
             view::ViewModel {
                 camera: camera::Camera {
-                    eye: (0.0, -2.0, 0.0).into(),
+                    eye: (0.0, -1.25, 0.0).into(),
                     target: (0.0, 0.0, 0.0).into(),
                     up: cgmath::Vector3::unit_z() * -1.0,
                     aspect: engine.size.width as f32 / engine.size.height as f32,
@@ -108,12 +108,7 @@ impl renderer::Renderer<State> for Titles {
                 attachment: &self.output.view,
                 resolve_target: None,
                 ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color {
-                        r: 0.01,
-                        g: 0.1,
-                        b: 0.12,
-                        a: 1.0,
-                    }),
+                    load: wgpu::LoadOp::Load,
                     store: true,
                 },
             }],
