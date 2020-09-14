@@ -9,8 +9,7 @@ const OBJ_ORDER: [usize; 4] = [1, 0, 2, 3];
 
 pub struct Meshes {
     pipeline: wgpu::RenderPipeline,
-    titles: model::Model,
-    accordion: model::Model,
+    models: Vec<model::Model>,
     depth_buffer: texture::Texture,
     view: view::ViewObject,
     instances: instances::InstanceListObject,
@@ -27,7 +26,7 @@ impl Meshes {
     ) -> Box<Self> {
         let device = &engine.device;
 
-        let resources = include_resources!("assets/tekstit.mtl", "assets/acordion.mtl");
+        let resources = include_resources!("assets/viulu.mtl", "assets/acordion.mtl");
 
         let view = view::ViewObject::new(
             device,
@@ -46,14 +45,6 @@ impl Meshes {
 
         let mut texture_builder = texture::TextureBuilder::new(engine);
 
-        let titles = model::Model::load_obj_buf(
-            device,
-            include_bytes!("assets/tekstit.obj"),
-            &resources,
-            &mut texture_builder,
-        )
-        .expect("Could not load model");
-
         let accordion = model::Model::load_obj_buf(
             device,
             include_bytes!("assets/acordion.obj"),
@@ -61,7 +52,14 @@ impl Meshes {
             &mut texture_builder,
         )
         .expect("Could not load accordion");
-        println!("Haitarina {:?}", accordion.meshes.len());
+
+        let viulu = model::Model::load_obj_buf(
+            device,
+            include_bytes!("assets/viulu.obj"),
+            &resources,
+            &mut texture_builder,
+        )
+        .expect("Could not load viulu");
 
         let depth_buffer = texture_builder.depth_stencil_buffer("depth_buffer");
 
@@ -77,12 +75,12 @@ impl Meshes {
             .add_vertex_buffer_descriptor(model::ModelVertex::desc())
             .bind_objects(&[&view, environment_map.as_ref(), &instances, &light])
             .add_command_buffers(texture_builder.command_buffers)
+            .set_cull_mode(wgpu::CullMode::None)
             .build(engine);
 
         Box::new(Self {
             pipeline,
-            titles,
-            accordion,
+            models: vec![accordion, viulu],
             view,
             instances,
             depth_buffer,
@@ -138,9 +136,9 @@ impl renderer::Renderer<State> for Meshes {
             }),
         });
 
-        // let mesh_index = OBJ_ORDER[ctx.state.time.trunc() as usize % 4];
-        // let mesh = &self.model.meshes[mesh_index];
-        let mesh = &self.accordion.meshes[0];
+        // let mesh =
+        //     &self.models[(ctx.state.time / 2.0).floor() as usize % self.models.len()].meshes[0];
+        let mesh = &self.models[1].meshes[0];
 
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, self.view.get_bind_group(), &[]);
