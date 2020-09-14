@@ -1,4 +1,5 @@
 mod background;
+mod blur;
 mod layer;
 mod meshes;
 mod postprocess;
@@ -16,16 +17,22 @@ pub fn init(window: &mut winit::window::Window) -> Engine<state::State> {
 
     // engine.set_music(include_bytes!("assets/musa.mp3"));
 
+    let bg_buffer = Rc::new(engine.create_render_buffer());
     let env_buffer = Rc::new(engine.create_render_buffer());
     let stuff_buffer = Rc::new(engine.create_render_buffer());
 
     // Background
-    engine.add_renderer(background::Background::new(&engine, env_buffer.clone()));
+    engine.add_renderer(background::Background::new(&engine, bg_buffer.clone()));
+    engine.add_renderer(blur::Blur::new(
+        &engine,
+        bg_buffer.clone(),
+        env_buffer.clone(),
+    ));
 
     // 3D stuff
     engine.add_renderer(layer::Layer::new(
         &engine,
-        env_buffer.clone(),
+        bg_buffer.clone(),
         stuff_buffer.clone(),
     ));
     engine.add_renderer(meshes::Meshes::new(

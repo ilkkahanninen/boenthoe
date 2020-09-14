@@ -136,9 +136,9 @@ impl renderer::Renderer<State> for Meshes {
             }),
         });
 
-        // let mesh =
-        //     &self.models[(ctx.state.time / 2.0).floor() as usize % self.models.len()].meshes[0];
-        let mesh = &self.models[1].meshes[0];
+        let mesh =
+            &self.models[(ctx.state.time / 2.0).floor() as usize % self.models.len()].meshes[0];
+        // let mesh = &self.models[1].meshes[0];
 
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, self.view.get_bind_group(), &[]);
