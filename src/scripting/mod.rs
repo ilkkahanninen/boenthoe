@@ -1,7 +1,7 @@
 #[macro_export]
 macro_rules! create_state {
     ($T:ident { $($k:ident => $e:expr),* }) => {{
-        let f: StateFn<$T> = Box::new(move |time: &f64| $T {
+        let f: StateFn<$T> = Box::new(move |time: &f32| $T {
             $(
                 $k: $e.get_value(time),
             )*
@@ -10,30 +10,30 @@ macro_rules! create_state {
     }};
 }
 
-pub type StateFn<T> = Box<dyn Fn(&f64) -> T>;
+pub type StateFn<T> = Box<dyn Fn(&f32) -> T>;
 
 pub struct Envelope {
-    pub duration: f64,
-    pub get_value: Box<dyn Fn(&f64) -> f64>,
+    pub duration: f32,
+    pub get_value: Box<dyn Fn(&f32) -> f32>,
 }
 
 #[allow(dead_code)]
 impl Envelope {
     pub fn time() -> Self {
         Self {
-            duration: std::f64::INFINITY,
+            duration: std::f32::INFINITY,
             get_value: Box::new(|time| time.clone()),
         }
     }
 
-    pub fn hold(duration: f64, value: f64) -> Self {
+    pub fn hold(duration: f32, value: f32) -> Self {
         Self {
             duration,
             get_value: Box::new(move |_| value),
         }
     }
 
-    pub fn linear(duration: f64, from: f64, to: f64) -> Self {
+    pub fn linear(duration: f32, from: f32, to: f32) -> Self {
         Self {
             duration,
             get_value: Box::new(move |pos| {
@@ -43,7 +43,7 @@ impl Envelope {
         }
     }
 
-    pub fn catmull(duration: f64, p0: f64, p1: f64, p2: f64, p3: f64) -> Self {
+    pub fn catmull(duration: f32, p0: f32, p1: f32, p2: f32, p3: f32) -> Self {
         Self {
             duration,
             get_value: Box::new(move |pos| {
@@ -54,6 +54,20 @@ impl Envelope {
                     + (-p0 + p2) * t
                     + (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * t2
                     + (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * t3)
+            }),
+        }
+    }
+
+    pub fn index(array: Vec<f32>) -> Self {
+        Self {
+            duration: array.last().unwrap().clone(),
+            get_value: Box::new(move |pos| {
+                for (i, p) in array.iter().enumerate() {
+                    if pos < p {
+                        return i as f32;
+                    }
+                }
+                return array.len() as f32;
             }),
         }
     }
@@ -85,7 +99,7 @@ impl Envelope {
 
     pub fn repeat(count: usize, envelope: Envelope) -> Self {
         Self {
-            duration: envelope.duration * (count as f64),
+            duration: envelope.duration * (count as f32),
             get_value: Box::new(move |t| {
                 let dt = t % envelope.duration;
                 envelope.get_value(&dt)
@@ -95,7 +109,7 @@ impl Envelope {
 
     pub fn infinite(envelope: Envelope) -> Self {
         Self {
-            duration: std::f64::INFINITY,
+            duration: std::f32::INFINITY,
             get_value: Box::new(move |t| {
                 let dt = t % envelope.duration;
                 envelope.get_value(&dt)
@@ -103,18 +117,18 @@ impl Envelope {
         }
     }
 
-    pub fn clip(duration: f64, envelope: Envelope) -> Self {
+    pub fn clip(duration: f32, envelope: Envelope) -> Self {
         Self {
             duration,
             get_value: Box::new(move |t| envelope.get_value(&t.min(duration))),
         }
     }
 
-    pub fn get_value(&self, t: &f64) -> f64 {
+    pub fn get_value(&self, t: &f32) -> f32 {
         (self.get_value)(&t.min(self.duration))
     }
 
-    pub fn debug(&self, t: f64) {
+    pub fn debug(&self, t: f32) {
         println!(
             "duration = {}, value at {} = {}",
             self.duration,

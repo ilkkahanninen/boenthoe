@@ -2,19 +2,20 @@ use crate::create_state;
 use crate::scripting::*;
 
 pub struct State {
-    pub time: f64,
-    pub cam_x: f64,
-    pub cam_y: f64,
-    pub cam_z: f64,
+    pub time: f32,
+    pub part: f32,
 }
+
+const MARKERS: [f32; 17] = [
+    0.524, 4.946, 9.080, 13.078, 16.803, 20.683, 24.375, 28.030, 31.738, 35.476, 39.166, 42.865,
+    46.594, 50.115, 53.592, 57.078, 60.129,
+];
 
 impl State {
     pub fn new() -> StateFn<Self> {
         create_state!(Self {
             time => Envelope::time(),
-            cam_x => Envelope::infinite(Envelope::linear(12.0, 4.0, 2.0)),
-            cam_y => Envelope::infinite(Envelope::linear(8.0, 6.0, 2.0)),
-            cam_z => Envelope::infinite(Envelope::linear(15.0, 7.0, 2.0))
+            part => Envelope::index(Vec::<f32>::from(MARKERS))
         })
     }
 }

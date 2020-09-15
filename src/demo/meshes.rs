@@ -5,8 +5,6 @@ use crate::engine::*;
 use crate::include_resources;
 use std::rc::Rc;
 
-const OBJ_ORDER: [usize; 4] = [1, 0, 2, 3];
-
 pub struct Meshes {
     pipeline: wgpu::RenderPipeline,
     models: Vec<model::Model>,
@@ -122,6 +120,11 @@ impl Meshes {
 }
 
 impl renderer::Renderer<State> for Meshes {
+    fn should_render(&self, context: &renderer::RenderingContext<State>) -> bool {
+        let part = context.state.part;
+        part >= 5.0 && part < 9.0
+    }
+
     fn update(&mut self, ctx: &mut renderer::RenderingContext<State>) {
         let time = ctx.state.time as f32;
 
@@ -160,9 +163,7 @@ impl renderer::Renderer<State> for Meshes {
             }),
         });
 
-        let mesh =
-            &self.models[(ctx.state.time / 2.0).floor() as usize % self.models.len()].meshes[0];
-        // let mesh = &self.models[1].meshes[0];
+        let mesh = &self.models[(ctx.state.part / 2.0) as usize % self.models.len()].meshes[0];
 
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, self.view.get_bind_group(), &[]);
