@@ -4,6 +4,7 @@ mod layer;
 mod meshes;
 mod postprocess;
 mod state;
+mod titlelayer;
 
 use crate::demo::state::State;
 use crate::engine::engine::Engine;
@@ -35,11 +36,12 @@ pub fn init(window: &mut winit::window::Window) -> Engine<state::State> {
         bg_buffer.clone(),
         stuff_buffer.clone(),
     ));
-    engine.add_renderer(meshes::Meshes::new(
-        &engine,
-        env_buffer.clone(),
-        stuff_buffer.clone(),
-    ));
+    // engine.add_renderer(meshes::Meshes::new(
+    //     &engine,
+    //     env_buffer.clone(),
+    //     stuff_buffer.clone(),
+    // ));
+    engine.add_renderer(titlelayer::TitleLayer::new(&engine, stuff_buffer.clone()));
 
     // Post-processing
     engine.add_renderer(postprocess::PostProcess::new(&engine, stuff_buffer.clone()));

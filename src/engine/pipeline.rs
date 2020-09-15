@@ -10,6 +10,8 @@ pub struct PipelineBuilder<'a> {
     bind_group_layouts: Vec<&'a wgpu::BindGroupLayout>,
     depth_stencil_buffer_enabled: bool,
     cull_mode: wgpu::CullMode,
+    color_blend: wgpu::BlendDescriptor,
+    alpha_blend: wgpu::BlendDescriptor,
 }
 
 #[derive(Copy, Clone)]
@@ -18,6 +20,18 @@ pub struct ShaderScript<'a> {
     label: &'a str,
     kind: shaderc::ShaderKind,
 }
+
+pub const ALPHA_BLEND: wgpu::BlendDescriptor = wgpu::BlendDescriptor {
+    src_factor: wgpu::BlendFactor::SrcAlpha,
+    dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+    operation: wgpu::BlendOperation::Add,
+};
+
+pub const SCREEN_BLEND: wgpu::BlendDescriptor = wgpu::BlendDescriptor {
+    src_factor: wgpu::BlendFactor::One,
+    dst_factor: wgpu::BlendFactor::OneMinusSrcColor,
+    operation: wgpu::BlendOperation::Add,
+};
 
 #[allow(dead_code)]
 impl<'a> PipelineBuilder<'a> {
@@ -91,6 +105,20 @@ impl<'a> PipelineBuilder<'a> {
         self
     }
 
+    pub fn set_blend_mode(self, blend: wgpu::BlendDescriptor) -> Self {
+        self.set_blend_mode_separate(blend.clone(), blend.clone())
+    }
+
+    pub fn set_blend_mode_separate(
+        mut self,
+        color_blend: wgpu::BlendDescriptor,
+        alpha_blend: wgpu::BlendDescriptor,
+    ) -> Self {
+        self.color_blend = color_blend;
+        self.alpha_blend = alpha_blend;
+        self
+    }
+
     pub fn build<T>(self, engine: &engine::Engine<T>) -> wgpu::RenderPipeline {
         let device = &engine.device;
 
@@ -145,8 +173,8 @@ impl<'a> PipelineBuilder<'a> {
             // Color states
             color_states: &[wgpu::ColorStateDescriptor {
                 format: engine.swap_chain_descriptor.format,
-                color_blend: wgpu::BlendDescriptor::REPLACE,
-                alpha_blend: wgpu::BlendDescriptor::REPLACE,
+                color_blend: self.color_blend,
+                alpha_blend: self.alpha_blend,
                 write_mask: wgpu::ColorWrite::ALL,
             }],
 

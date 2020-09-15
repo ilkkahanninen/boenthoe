@@ -4,55 +4,50 @@ use crate::engine::*;
 use std::rc::Rc;
 use wgpu::util::DeviceExt;
 
-pub struct Background {
+pub struct TitleLayer {
     pipeline: wgpu::RenderPipeline,
-    uniforms: BackgroundObject,
-    images: [texture::Texture; 1],
+    images: Vec<texture::Texture>,
     output: Rc<texture::Texture>,
+    uniforms: UniformsObject,
 }
 
-impl Background {
+impl TitleLayer {
     pub fn new<T>(engine: &engine::Engine<T>, output: Rc<texture::Texture>) -> Box<Self> {
         let mut texture_builder = texture::TextureBuilder::new(engine);
-        let images: [texture::Texture; 1] = [
-            texture_builder.diffuse(include_bytes!("assets/kuosi1.jpg"), "kuosi1.jpg"),
-            // texture_builder.diffuse(include_bytes!("assets/kuosi2.jpg"), "kuosi2.jpg"),
-            // texture_builder.diffuse(include_bytes!("assets/kuosi3.jpg"), "kuosi3.jpg"),
-            // texture_builder.diffuse(include_bytes!("assets/kuosi4.jpg"), "kuosi4.jpg"),
-            // texture_builder.diffuse(include_bytes!("assets/kuosi5.jpg"), "kuosi5.jpg"),
-            // texture_builder.diffuse(include_bytes!("assets/kuosi6.jpg"), "kuosi6.jpg"),
-            // texture_builder.diffuse(include_bytes!("assets/kuosi7.jpg"), "kuosi7.jpg"),
-            // texture_builder.diffuse(include_bytes!("assets/kuosi8.jpg"), "kuosi8.jpg"),
-            // texture_builder.diffuse(include_bytes!("assets/kuosi9.jpg"), "kuosi9.jpg"),
+        let images = vec![
+            texture_builder.diffuse(include_bytes!("assets/jml-overlay-1.png"), "jml-overlay-1"),
+            texture_builder.diffuse(include_bytes!("assets/jml-overlay-2.png"), "jml-overlay-2"),
         ];
-        let uniforms = BackgroundObject::new(
+
+        let uniforms = UniformsObject::new(
             &engine.device,
-            BackgroundModel {
-                zoom: 0.5,
-                brightness: 1.0,
+            UniformsModel {
+                time: 0.0,
+                scale: 0.0,
             },
         );
 
         let pipeline = pipeline::PipelineBuilder::new()
-            .vertex_shader(include_str!("shaders/background.vert"), "background.vert")
-            .fragment_shader(include_str!("shaders/background.frag"), "background.frag")
-            .bind_objects(&[&images[0], &uniforms])
+            .vertex_shader(include_str!("shaders/layer.vert"), "layer.vert")
+            .fragment_shader(include_str!("shaders/titlelayer.frag"), "titlelayer.frag")
+            .bind_objects(&[&uniforms, &images[0], &images[1]])
             .add_command_buffers(texture_builder.command_buffers)
+            .set_blend_mode(pipeline::SCREEN_BLEND)
             .build(engine);
 
         Box::new(Self {
             pipeline,
-            uniforms,
             images,
             output,
+            uniforms,
         })
     }
 }
 
-impl renderer::Renderer<State> for Background {
+impl renderer::Renderer<State> for TitleLayer {
     fn update(&mut self, ctx: &mut renderer::RenderingContext<State>) {
-        self.uniforms.model.zoom = ctx.state.time.sin() as f32 * 0.25 + 0.25;
-        self.uniforms.model.brightness = 1.0 - ctx.state.time.fract() as f32;
+        self.uniforms.model.time = ctx.state.time as f32;
+        self.uniforms.model.scale = (ctx.state.time as f32 * 0.1).sin() * 200.0 + 300.0;
         self.uniforms.update(ctx.device, ctx.encoder);
     }
 
@@ -62,46 +57,41 @@ impl renderer::Renderer<State> for Background {
                 attachment: &self.output.view,
                 resolve_target: None,
                 ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color {
-                        r: 0.0,
-                        g: 0.0,
-                        b: 0.0,
-                        a: 1.0,
-                    }),
+                    load: wgpu::LoadOp::Load,
                     store: true,
                 },
             }],
             depth_stencil_attachment: None,
         });
 
-        let index = ctx.state.time.floor() as usize % self.images.len();
-
         render_pass.set_pipeline(&self.pipeline);
-        render_pass.set_bind_group(0, &self.images[index].bind_group, &[]);
-        render_pass.set_bind_group(1, &self.uniforms.bind_group, &[]);
+        render_pass.set_bind_group(0, &self.uniforms.bind_group, &[]);
+        for (slot, image) in self.images.iter().enumerate() {
+            render_pass.set_bind_group(1 + slot as u32, &image.bind_group, &[]);
+        }
         render_pass.draw(0..6, 0..1);
     }
 }
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-struct BackgroundModel {
-    zoom: f32,
-    brightness: f32,
+struct UniformsModel {
+    time: f32,
+    scale: f32,
 }
 
-unsafe impl bytemuck::Pod for BackgroundModel {}
-unsafe impl bytemuck::Zeroable for BackgroundModel {}
+unsafe impl bytemuck::Pod for UniformsModel {}
+unsafe impl bytemuck::Zeroable for UniformsModel {}
 
-struct BackgroundObject {
-    pub model: BackgroundModel,
+struct UniformsObject {
+    pub model: UniformsModel,
     pub buffer: wgpu::Buffer,
     pub bind_group_layout: wgpu::BindGroupLayout,
     pub bind_group: wgpu::BindGroup,
 }
 
-impl BackgroundObject {
-    pub fn new(device: &wgpu::Device, model: BackgroundModel) -> Self {
+impl UniformsObject {
+    pub fn new(device: &wgpu::Device, model: UniformsModel) -> Self {
         let buffer = Self::create_buffer(device, model, true);
 
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -111,7 +101,7 @@ impl BackgroundObject {
                 ty: wgpu::BindingType::UniformBuffer {
                     dynamic: false,
                     min_binding_size: wgpu::BufferSize::new(
-                        std::mem::size_of::<BackgroundModel>() as _
+                        std::mem::size_of::<UniformsModel>() as _
                     ),
                 },
                 count: None,
@@ -143,13 +133,13 @@ impl BackgroundObject {
             0,
             &self.buffer,
             0,
-            std::mem::size_of::<BackgroundModel>() as wgpu::BufferAddress,
+            std::mem::size_of::<UniformsModel>() as wgpu::BufferAddress,
         );
     }
 
     fn create_buffer(
         device: &wgpu::Device,
-        model: BackgroundModel,
+        model: UniformsModel,
         is_destination: bool,
     ) -> wgpu::Buffer {
         device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -165,7 +155,7 @@ impl BackgroundObject {
     }
 }
 
-impl Object for BackgroundObject {
+impl Object for UniformsObject {
     fn get_layout(&self) -> &wgpu::BindGroupLayout {
         &self.bind_group_layout
     }
