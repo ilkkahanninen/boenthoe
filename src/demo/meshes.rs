@@ -122,7 +122,7 @@ impl Meshes {
 impl renderer::Renderer<State> for Meshes {
     fn should_render(&self, context: &renderer::RenderingContext<State>) -> bool {
         let part = context.state.part;
-        part >= 5.0 && part < 9.0
+        part >= 5.0 && part < 17.0
     }
 
     fn update(&mut self, ctx: &mut renderer::RenderingContext<State>) {
@@ -163,7 +163,7 @@ impl renderer::Renderer<State> for Meshes {
             }),
         });
 
-        let mesh = &self.models[(ctx.state.part / 2.0) as usize % self.models.len()].meshes[0];
+        let mesh = &self.models[ctx.state.part as usize % self.models.len()].meshes[0];
 
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, self.view.get_bind_group(), &[]);

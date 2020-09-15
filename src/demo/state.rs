@@ -4,6 +4,7 @@ use crate::scripting::*;
 pub struct State {
     pub time: f32,
     pub part: f32,
+    pub strobe: f32,
 }
 
 const MARKERS: [f32; 17] = [
@@ -13,9 +14,37 @@ const MARKERS: [f32; 17] = [
 
 impl State {
     pub fn new() -> StateFn<Self> {
+        let strobe = State::strobe();
         create_state!(Self {
             time => Envelope::time(),
-            part => Envelope::index(Vec::<f32>::from(MARKERS))
+            part => Envelope::index(Vec::<f32>::from(MARKERS)),
+            strobe => strobe
         })
+    }
+
+    fn strobe() -> Envelope {
+        Envelope::concat(
+            MARKERS
+                .iter()
+                .scan(0.0, |state, &time| {
+                    let prev_time = state.clone();
+                    *state = time;
+                    Some(time - prev_time)
+                })
+                .flat_map(|duration| {
+                    let dur = duration / 8.0;
+                    vec![
+                        Envelope::linear(dur, 1.0, 0.0),
+                        Envelope::linear(dur, 0.5, 0.0),
+                        Envelope::linear(dur, 0.8, 0.0),
+                        Envelope::linear(dur, 0.8, 0.0),
+                        Envelope::linear(dur, 1.0, 0.0),
+                        Envelope::linear(dur, 0.5, 0.0),
+                        Envelope::linear(dur, 0.8, 0.0),
+                        Envelope::linear(dur, 0.8, 0.0),
+                    ]
+                })
+                .collect(),
+        )
     }
 }

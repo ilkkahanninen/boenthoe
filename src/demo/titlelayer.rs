@@ -45,6 +45,11 @@ impl TitleLayer {
 }
 
 impl renderer::Renderer<State> for TitleLayer {
+    fn should_render(&self, context: &renderer::RenderingContext<State>) -> bool {
+        let part = context.state.part;
+        part >= 1.0 && part < 5.0
+    }
+
     fn update(&mut self, ctx: &mut renderer::RenderingContext<State>) {
         self.uniforms.model.time = ctx.state.time as f32;
         self.uniforms.model.scale = (ctx.state.time as f32 * 0.1).sin() * 200.0 + 300.0;

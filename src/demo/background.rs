@@ -50,9 +50,14 @@ impl Background {
 }
 
 impl renderer::Renderer<State> for Background {
+    fn should_render(&self, context: &renderer::RenderingContext<State>) -> bool {
+        let part = context.state.part;
+        part >= 1.0 && part < 17.0
+    }
+
     fn update(&mut self, ctx: &mut renderer::RenderingContext<State>) {
         self.uniforms.model.zoom = ctx.state.time.sin() as f32 * 0.25 + 0.25;
-        self.uniforms.model.brightness = 1.0 - ctx.state.time.fract() as f32;
+        self.uniforms.model.brightness = ctx.state.strobe;
         self.uniforms.update(ctx.device, ctx.encoder);
     }
 
