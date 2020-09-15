@@ -26,7 +26,13 @@ impl Meshes {
     ) -> Box<Self> {
         let device = &engine.device;
 
-        let resources = include_resources!("assets/viulu.mtl", "assets/acordion.mtl");
+        let resources = include_resources!(
+            "assets/viulu.mtl",
+            "assets/acordion.mtl",
+            "assets/puukko.mtl",
+            "assets/jussipaita.mtl",
+            "assets/talla.mtl"
+        );
 
         let view = view::ViewObject::new(
             device,
@@ -61,6 +67,30 @@ impl Meshes {
         )
         .expect("Could not load viulu");
 
+        let puukko = model::Model::load_obj_buf(
+            device,
+            include_bytes!("assets/puukko.obj"),
+            &resources,
+            &mut texture_builder,
+        )
+        .expect("Could not load puukko");
+
+        let talla = model::Model::load_obj_buf(
+            device,
+            include_bytes!("assets/talla.obj"),
+            &resources,
+            &mut texture_builder,
+        )
+        .expect("Could not load talla");
+
+        let jussipaita = model::Model::load_obj_buf(
+            device,
+            include_bytes!("assets/jussipaita.obj"),
+            &resources,
+            &mut texture_builder,
+        )
+        .expect("Could not load jussipaita");
+
         let depth_buffer = texture_builder.depth_stencil_buffer("depth_buffer");
 
         let instances =
@@ -80,7 +110,7 @@ impl Meshes {
 
         Box::new(Self {
             pipeline,
-            models: vec![accordion, viulu],
+            models: vec![accordion, viulu, talla, puukko, jussipaita],
             view,
             instances,
             depth_buffer,
@@ -95,12 +125,6 @@ impl renderer::Renderer<State> for Meshes {
     fn update(&mut self, ctx: &mut renderer::RenderingContext<State>) {
         let time = ctx.state.time as f32;
 
-        // self.view.model.camera.eye = (
-        //     ctx.state.cam_x as f32,
-        //     ctx.state.cam_y as f32,
-        //     ctx.state.cam_z as f32,
-        // )
-        //     .into();
         self.view.update(ctx.device, ctx.encoder);
 
         self.light.model.position.x = (time * 3.0).sin() * 10.0;
