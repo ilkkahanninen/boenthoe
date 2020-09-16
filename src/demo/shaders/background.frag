@@ -26,7 +26,7 @@ void main() {
             sampler2D(t_diffuse, s_diffuse),
             v_tex_coords + zoom + distort
         ).xyz,
-        vec3(1.25 - u_brightness)
+        vec3(1.25 - u_brightness, 1.2 - u_brightness, 1.1 - u_brightness)
     );
     f_color = vec4(color * u_fade * (0.95 + 0.1 * rand(u_zoom + u_brightness + u_lsd + sin(v_tex_coords.x * 1231.2) + sin(v_tex_coords.y * 3213.2) )), 1.0);
 }

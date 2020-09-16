@@ -27,7 +27,8 @@ impl State {
             speed => Envelope::concat(vec![
                 Envelope::hold(31.738, 1.0),
                 Envelope::linear(15.0, 1.0, 2.0),
-                Envelope::linear(15.0, 2.0, 20.0),
+                Envelope::linear(14.0, 2.0, 2.5),
+                Envelope::linear(0.5, 2.5, 1.0),
             ]),
             rotation => Envelope::concat(vec![
                 Envelope::linear(31.0, 0.0, 100.0),

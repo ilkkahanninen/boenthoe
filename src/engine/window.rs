@@ -31,6 +31,7 @@ impl Window {
             window.set_fullscreen(Some(winit::window::Fullscreen::Borderless(
                 window.current_monitor(),
             )));
+            window.set_cursor_visible(false);
         }
 
         Window {

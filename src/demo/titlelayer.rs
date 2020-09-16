@@ -59,8 +59,8 @@ impl renderer::Renderer<State> for TitleLayer {
     }
 
     fn update(&mut self, ctx: &mut renderer::RenderingContext<State>) {
-        self.uniforms.model.time = ctx.state.time as f32;
-        self.uniforms.model.scale = (ctx.state.time as f32 * 0.1).sin() * 100.0 + 50.0;
+        self.uniforms.model.time = ctx.state.time;
+        self.uniforms.model.scale = ctx.state.time + 150.0;
         self.uniforms.update(ctx.device, ctx.encoder);
     }
 
