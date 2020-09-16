@@ -137,8 +137,8 @@ impl renderer::Renderer<State> for Meshes {
 
         for (_index, instance) in self.instances.models.iter_mut().enumerate() {
             instance.transform = transform::Transform::new()
-                .rotate(time.sin(), 0.0, 8.0, cgmath::Rad(time * 3.0))
-                .scale(0.2)
+                .rotate(time.sin(), 0.0, 8.0, cgmath::Rad(ctx.state.rotation))
+                .scale(0.2 + ctx.state.mesh_pumping_factor * ctx.state.strobe)
         }
         self.instances.update(ctx.device, ctx.encoder);
     }

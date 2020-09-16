@@ -29,7 +29,9 @@ impl Background {
             &engine.device,
             BackgroundModel {
                 zoom: 0.5,
-                brightness: 1.0,
+                brightness: 0.5,
+                lsd: 0.0,
+                fade: 0.0,
             },
         );
 
@@ -50,14 +52,13 @@ impl Background {
 }
 
 impl renderer::Renderer<State> for Background {
-    fn should_render(&self, context: &renderer::RenderingContext<State>) -> bool {
-        let part = context.state.part;
-        part >= 1.0 && part < 17.0
-    }
-
     fn update(&mut self, ctx: &mut renderer::RenderingContext<State>) {
         self.uniforms.model.zoom = ctx.state.time.sin() as f32 * 0.25 + 0.25;
-        self.uniforms.model.brightness = ctx.state.strobe;
+        self.uniforms.model.lsd = ctx.state.speed.powf(2.0) - 1.0;
+        self.uniforms.model.fade = ctx.state.fade;
+        if ctx.state.part >= 5.0 && ctx.state.part < 17.0 {
+            self.uniforms.model.brightness = ctx.state.strobe;
+        }
         self.uniforms.update(ctx.device, ctx.encoder);
     }
 
@@ -93,6 +94,8 @@ impl renderer::Renderer<State> for Background {
 struct BackgroundModel {
     zoom: f32,
     brightness: f32,
+    lsd: f32,
+    fade: f32,
 }
 
 unsafe impl bytemuck::Pod for BackgroundModel {}
