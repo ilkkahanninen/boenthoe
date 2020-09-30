@@ -1,14 +1,14 @@
 # Boenthoe
 
-Rust demo engine. This project is in very early stage.
+Rust demo engine. The first proof-of-concept demo is built with this engine (just compile and run the master). Lots and lots are going to change.
 
-Goals for the first version:
+Next steps:
 
-- Easy API for quick development.
-- Nice composable envelope functions for scripting.
+- Rewrite and simplify rendering pipeline creation.
+- Own script language (BoenthoeScript a.k.a. bäsä) for setting parametrizable parts of demos.
+- Hot-reload for script and assets.
+- glTF or Collada support with animations.
 - Multi-platform support: Windows, OSX, Linux and maybe web.
-- Rudimentary 3D object support
-- Postprocess effects
 
 ## Requirements
 
