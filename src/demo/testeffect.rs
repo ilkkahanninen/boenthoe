@@ -60,7 +60,7 @@ impl TestEffect {
             .add_vertex_buffer_descriptor(model::ModelVertex::desc())
             .bind_objects(&[
                 &view,
-                &model.materials[0].diffuse_texture,
+                model.materials[0].diffuse_texture.as_ref().unwrap(),
                 &instances,
                 &light,
             ])
@@ -137,10 +137,11 @@ impl renderer::Renderer<State> for TestEffect {
 
         let mesh = &self.model.meshes[0];
         let material = &self.model.materials[0];
+        let diffuse_texture = material.diffuse_texture.as_ref().unwrap();
 
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, self.view.get_bind_group(), &[]);
-        render_pass.set_bind_group(1, &material.diffuse_texture.bind_group, &[]);
+        render_pass.set_bind_group(1, &diffuse_texture.bind_group, &[]);
         render_pass.set_bind_group(2, self.instances.get_bind_group(), &[]);
         render_pass.set_bind_group(3, self.light.get_bind_group(), &[]);
         render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));

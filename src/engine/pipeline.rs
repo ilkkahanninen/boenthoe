@@ -9,6 +9,9 @@ pub struct PipelineBuilder<'a> {
     command_buffers: Vec<wgpu::CommandBuffer>,
     bind_group_layouts: Vec<&'a wgpu::BindGroupLayout>,
     depth_stencil_buffer_enabled: bool,
+    cull_mode: wgpu::CullMode,
+    color_blend: wgpu::BlendDescriptor,
+    alpha_blend: wgpu::BlendDescriptor,
 }
 
 #[derive(Copy, Clone)]
@@ -18,10 +21,22 @@ pub struct ShaderScript<'a> {
     kind: shaderc::ShaderKind,
 }
 
+pub const ALPHA_BLEND: wgpu::BlendDescriptor = wgpu::BlendDescriptor {
+    src_factor: wgpu::BlendFactor::SrcAlpha,
+    dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+    operation: wgpu::BlendOperation::Add,
+};
+
+pub const SCREEN_BLEND: wgpu::BlendDescriptor = wgpu::BlendDescriptor {
+    src_factor: wgpu::BlendFactor::One,
+    dst_factor: wgpu::BlendFactor::OneMinusSrcColor,
+    operation: wgpu::BlendOperation::Add,
+};
+
 #[allow(dead_code)]
 impl<'a> PipelineBuilder<'a> {
     pub fn new() -> Self {
-        Self::default()
+        Self::default().set_cull_mode(wgpu::CullMode::Back)
     }
 
     pub fn vertex_shader(mut self, glsl: &'a str, label: &'a str) -> Self {
@@ -85,6 +100,25 @@ impl<'a> PipelineBuilder<'a> {
         self
     }
 
+    pub fn set_cull_mode(mut self, cull_mode: wgpu::CullMode) -> Self {
+        self.cull_mode = cull_mode;
+        self
+    }
+
+    pub fn set_blend_mode(self, blend: wgpu::BlendDescriptor) -> Self {
+        self.set_blend_mode_separate(blend.clone(), blend.clone())
+    }
+
+    pub fn set_blend_mode_separate(
+        mut self,
+        color_blend: wgpu::BlendDescriptor,
+        alpha_blend: wgpu::BlendDescriptor,
+    ) -> Self {
+        self.color_blend = color_blend;
+        self.alpha_blend = alpha_blend;
+        self
+    }
+
     pub fn build<T>(self, engine: &engine::Engine<T>) -> wgpu::RenderPipeline {
         let device = &engine.device;
 
@@ -129,7 +163,7 @@ impl<'a> PipelineBuilder<'a> {
             // Rasterization stage
             rasterization_state: Some(wgpu::RasterizationStateDescriptor {
                 front_face: wgpu::FrontFace::Ccw,
-                cull_mode: wgpu::CullMode::Back,
+                cull_mode: self.cull_mode,
                 depth_bias: 0,
                 depth_bias_slope_scale: 0.0,
                 depth_bias_clamp: 0.0,
@@ -139,8 +173,8 @@ impl<'a> PipelineBuilder<'a> {
             // Color states
             color_states: &[wgpu::ColorStateDescriptor {
                 format: engine.swap_chain_descriptor.format,
-                color_blend: wgpu::BlendDescriptor::REPLACE,
-                alpha_blend: wgpu::BlendDescriptor::REPLACE,
+                color_blend: self.color_blend,
+                alpha_blend: self.alpha_blend,
                 write_mask: wgpu::ColorWrite::ALL,
             }],
 

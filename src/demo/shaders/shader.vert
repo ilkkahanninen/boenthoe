@@ -20,15 +20,18 @@ layout(set=2, binding=0) buffer Instances {
 layout(location=0) out vec2 v_tex_coords;
 layout(location=1) out vec3 v_normal;
 layout(location=2) out vec3 v_position;
+layout(location=3) out vec3 v_e;
 
 void main() {
     v_tex_coords = a_tex_coords;
 
     mat4 model_matrix = s_models[gl_InstanceIndex];
     mat3 normal_matrix = mat3(transpose(inverse(model_matrix)));
-    v_normal = normal_matrix * a_normal;
+    v_normal = normalize(normal_matrix * a_normal);
 
-    vec4 model_space = model_matrix  * vec4(a_position, 1.0);
+    vec4 model_space = model_matrix * vec4(a_position, 1.0);
     v_position = model_space.xyz;
     gl_Position = u_view_proj  * model_space;
+
+    v_e = normalize(v_position);
 }

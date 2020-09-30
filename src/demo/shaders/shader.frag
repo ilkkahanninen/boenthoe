@@ -4,6 +4,7 @@
 layout(location=0) in vec2 v_tex_coords;
 layout(location=1) in vec3 v_normal;
 layout(location=2) in vec3 v_position;
+layout(location=3) in vec3 v_e;
 
 // Bindings
 layout(set=0, binding=0) uniform Uniforms {
@@ -25,8 +26,6 @@ layout(set = 3, binding = 0) uniform Light {
 layout(location=0) out vec4 f_color;
 
 void main() {
-    vec4 object_color = texture(sampler2D(t_diffuse, s_diffuse), v_tex_coords);
-
     // Ambient light
     float ambient_strength = 0.02;
     vec3 ambient_color = light_color * ambient_strength;
@@ -43,6 +42,12 @@ void main() {
     vec3 reflect_dir = reflect(-light_dir, normal);
     float specular_strength = pow(max(dot(view_dir, reflect_dir), 0.0), 16);
     vec3 specular_color = specular_strength * light_color;
+
+    // Environment mapping
+    vec3 r = reflect(v_e, v_normal);
+    float m = 2.0 * sqrt(pow(r.x, 2.0) + pow(r.y, 2.0) + pow(r.z + 1.0, 2.0));
+    vec2 vn = r.xy / m + 0.5;
+    vec4 object_color = texture(sampler2D(t_diffuse, s_diffuse), vn);
 
     // Mix lights
     vec3 result = (ambient_color + diffuse_color + specular_color) * object_color.xyz;

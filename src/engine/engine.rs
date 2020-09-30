@@ -11,13 +11,13 @@ pub struct Engine<T> {
     pub swap_chain: wgpu::SwapChain,
     pub size: winit::dpi::PhysicalSize<u32>,
     pub renderers: Vec<Box<dyn renderer::Renderer<T>>>,
-    pub get_state: Box<dyn Fn(&f64) -> T>,
+    pub get_state: Box<dyn Fn(&f32) -> T>,
     pub timer: timer::Timer,
     pub music: Option<music::Music>,
 }
 
 impl<T> Engine<T> {
-    pub async fn new(window: &Window, get_state: Box<dyn Fn(&f64) -> T>) -> Self {
+    pub async fn new(window: &Window, get_state: Box<dyn Fn(&f32) -> T>) -> Self {
         let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
         let (size, surface) = unsafe {
             let size = window.inner_size();
@@ -137,15 +137,14 @@ impl<T> Engine<T> {
         let time = self.timer.elapsed();
         let state = (self.get_state)(&time);
         for renderer in self.renderers.iter_mut() {
-            if renderer.should_render(time) {
-                let mut context = renderer::RenderingContext {
-                    device: &self.device,
-                    encoder: &mut encoder,
-                    output: &frame.output.view,
-                    state: &state,
-                    screen_size: &self.size,
-                };
-
+            let mut context = renderer::RenderingContext {
+                device: &self.device,
+                encoder: &mut encoder,
+                output: &frame.output.view,
+                state: &state,
+                screen_size: &self.size,
+            };
+            if renderer.should_render(&context) {
                 renderer.update(&mut context);
                 renderer.render(&mut context);
             }
@@ -158,6 +157,6 @@ impl<T> Engine<T> {
         if let Some(music) = self.music.as_mut() {
             music.forward(seconds);
         }
-        self.timer.forward(seconds as f64);
+        self.timer.forward(seconds);
     }
 }
