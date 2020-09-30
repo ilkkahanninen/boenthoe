@@ -8,6 +8,7 @@ Next steps:
 - Own script language (BoenthoeScript a.k.a. bäsä) for setting parametrizable parts of demos.
 - Hot-reload for script and assets.
 - glTF or Collada support with animations.
+- DRY API to provide uniforms to shaders.
 - Multi-platform support: Windows, OSX, Linux and maybe web.
 
 ## Requirements
