@@ -1,0 +1,47 @@
+titles_begin_at = 2.0
+
+out overlay_index = concat(
+    hold(0, titles_begin_at),
+    title_run
+)
+
+out overlay_opacity = concat(
+    hold(0, titles_begin_at),
+    repeat(2, title_fade)
+)
+
+title_run = {
+    off = hold(0)
+    credits = hold(1)
+    title = hold(2)
+
+    concat(
+        credits(1),
+        title(1),
+        off(0)
+    )
+}
+
+title_fade = concat(
+    linear(0, 1, 0.2),
+    hold(1, 0.6),
+    linear(1, 0, 0.2)
+)
+
+out phasor = loop(linear(0, 1, 1))
+
+// Position of character
+out position = {
+    tl = [-1, -1]
+    tr = [1, -1]
+    bl = [-1, 1]
+    br = [1, 1]
+    duration = 0.2
+
+    loop(concat(
+        linear(tl, tr, duration),
+        linear(tr, br, duration),
+        linear(br, bl, duration),
+        linear(bl, tl, duration)
+    ))
+}

@@ -163,25 +163,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0d8c1fef690941d3e7788d328517591fecc684c084084702d6ff1641e993699a"
 
 [[package]]
-name = "boenthoe"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "cgmath",
- "clap",
- "cpal",
- "failure",
- "futures",
- "image",
- "minimp3",
- "rand 0.7.3",
- "shaderc",
- "tobj",
- "wgpu",
- "winit",
-]
-
-[[package]]
 name = "bumpalo"
 version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2091,6 +2072,25 @@ dependencies = [
  "quote 1.0.7",
  "syn",
  "unicode-xid 0.2.1",
+]
+
+[[package]]
+name = "tappelupolkka"
+version = "6.6.6"
+dependencies = [
+ "bytemuck",
+ "cgmath",
+ "clap",
+ "cpal",
+ "failure",
+ "futures",
+ "image",
+ "minimp3",
+ "rand 0.7.3",
+ "shaderc",
+ "tobj",
+ "wgpu",
+ "winit",
 ]
 
 [[package]]
