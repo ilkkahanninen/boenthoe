@@ -80,11 +80,11 @@ pub struct Mesh {
 }
 
 impl Model {
-    pub fn load_obj_buf<T>(
+    pub fn load_obj_buf(
         device: &wgpu::Device,
         obj_data: &[u8],
         resources: &Resources,
-        texture_builder: &mut texture::TextureBuilder<T>,
+        texture_builder: &mut texture::TextureBuilder,
     ) -> Result<Self, failure::Error> {
         let mut reader = std::io::Cursor::new(obj_data);
         let (obj_models, obj_materials) = tobj::load_obj_buf(&mut reader, true, |path| {

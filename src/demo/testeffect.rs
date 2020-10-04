@@ -1,9 +1,7 @@
-use crate::demo::state::State;
 use crate::engine::model::Vertex;
 use crate::engine::object::Object;
 use crate::engine::*;
 use crate::include_resources;
-use std::rc::Rc;
 
 pub struct TestEffect {
     pipeline: wgpu::RenderPipeline,
@@ -12,11 +10,10 @@ pub struct TestEffect {
     view: view::ViewObject,
     instances: instances::InstanceListObject,
     light: light::LightObject,
-    output: Rc<texture::Texture>,
 }
 
 impl TestEffect {
-    pub fn new<T>(engine: &engine::Engine<T>, output: Rc<texture::Texture>) -> Box<Self> {
+    pub fn new(engine: &engine::Engine) -> Box<Self> {
         let device = &engine.device;
 
         let resources = include_resources!("assets/cube.mtl", "assets/cube-diffuse.jpg");
@@ -53,19 +50,57 @@ impl TestEffect {
 
         let light = light::LightObject::new(device, light::LightModel::default());
 
-        let pipeline = pipeline::PipelineBuilder::new()
-            .enable_depth_stencil_buffer()
-            .vertex_shader(include_str!("shaders/shader.vert"), "shader.vert")
-            .fragment_shader(include_str!("shaders/shader.frag"), "shader.frag")
-            .add_vertex_buffer_descriptor(model::ModelVertex::desc())
-            .bind_objects(&[
-                &view,
-                model.materials[0].diffuse_texture.as_ref().unwrap(),
-                &instances,
-                &light,
-            ])
-            .add_command_buffers(texture_builder.command_buffers)
-            .build(engine);
+        let layout = device.create_pipeline_layout(&pipeline::layout(&vec![
+            &view.bind_group_layout,
+            &model.materials[0]
+                .diffuse_texture
+                .as_ref()
+                .unwrap()
+                .get_layout(),
+            &instances.bind_group_layout,
+            &light.bind_group_layout,
+        ]));
+
+        let vertex_shader = pipeline::shader(
+            device,
+            &assets::Asset {
+                data: include_bytes!("shaders/shader.vert").to_vec(),
+                name: "shader.vert".into(),
+                asset_type: assets::AssetType::GlslVertexShader,
+            },
+        )
+        .unwrap();
+
+        let fragment_shader = pipeline::shader(
+            device,
+            &assets::Asset {
+                data: include_bytes!("shaders/shader.frag").to_vec(),
+                name: "shader.frag".into(),
+                asset_type: assets::AssetType::GlslFragmentShader,
+            },
+        )
+        .unwrap();
+
+        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: None,
+            layout: Some(&layout),
+            vertex_stage: pipeline::shader_stage(&vertex_shader),
+            fragment_stage: Some(pipeline::shader_stage(&fragment_shader)),
+            rasterization_state: pipeline::rasterization_state(wgpu::CullMode::Back),
+            color_states: &pipeline::color_state(
+                engine.swap_chain_descriptor.format,
+                pipeline::BlendMode::default(),
+            ),
+            depth_stencil_state: pipeline::depth_stencil_state(),
+            vertex_state: wgpu::VertexStateDescriptor {
+                index_format: wgpu::IndexFormat::Uint32,
+                vertex_buffers: &[model::ModelVertex::desc()],
+            },
+            primitive_topology: wgpu::PrimitiveTopology::TriangleList,
+            sample_count: 1,
+            sample_mask: !0,
+            alpha_to_coverage_enabled: false,
+        });
 
         Box::new(Self {
             pipeline,
@@ -74,21 +109,20 @@ impl TestEffect {
             instances,
             depth_buffer,
             light,
-            output,
         })
     }
 }
 
-impl renderer::Renderer<State> for TestEffect {
-    fn update(&mut self, ctx: &mut renderer::RenderingContext<State>) {
-        let time = ctx.state.time as f32;
+impl renderer::Renderer for TestEffect {
+    fn update(&mut self, ctx: &mut renderer::RenderingContext) {
+        let time = ctx.time as f32;
 
-        self.view.model.camera.eye = (
-            ctx.state.cam_x as f32,
-            ctx.state.cam_y as f32,
-            ctx.state.cam_z as f32,
-        )
-            .into();
+        // self.view.model.camera.eye = (
+        //     ctx.state.cam_x as f32,
+        //     ctx.state.cam_y as f32,
+        //     ctx.state.cam_z as f32,
+        // )
+        //     .into();
         self.view.update(ctx.device, ctx.encoder);
 
         self.light.model.position.x = (time * 0.1).sin() * 10.0;
@@ -110,10 +144,10 @@ impl renderer::Renderer<State> for TestEffect {
         self.instances.update(ctx.device, ctx.encoder);
     }
 
-    fn render(&mut self, ctx: &mut renderer::RenderingContext<State>) {
+    fn render(&mut self, ctx: &mut renderer::RenderingContext) {
         let mut render_pass = ctx.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                attachment: &self.output.view,
+                attachment: &ctx.output,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {

@@ -87,18 +87,18 @@ impl Music {
         );
     }
 
-    pub fn set_position(&mut self, seconds: f32) {
+    pub fn set_position(&mut self, seconds: f64) {
         let mut position = self.position.lock().unwrap();
         *position = self.seconds_to_samples(seconds).max(0) as usize;
     }
 
-    pub fn forward(&mut self, seconds: f32) {
+    pub fn forward(&mut self, seconds: f64) {
         let number_of_samples = self.seconds_to_samples(seconds);
         let mut position = self.position.lock().unwrap();
         *position = (*position as i32 + number_of_samples).max(0) as usize;
     }
 
-    fn seconds_to_samples(&self, seconds: f32) -> i32 {
-        (self.sample_rate.0 as f32 * seconds) as i32 * self.channels as i32
+    fn seconds_to_samples(&self, seconds: f64) -> i32 {
+        (self.sample_rate.0 as f64 * seconds) as i32 * self.channels as i32
     }
 }

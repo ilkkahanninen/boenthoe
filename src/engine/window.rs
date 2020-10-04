@@ -41,7 +41,7 @@ impl Window {
         }
     }
 
-    pub fn run<T: 'static>(self, mut engine: engine::Engine<T>) {
+    pub fn run(self, mut engine: engine::Engine) {
         let Window {
             window,
             event_loop,

@@ -1,7 +1,7 @@
 use crate::engine::*;
 use winit::{event::*, window::Window};
 
-pub struct Engine<T> {
+pub struct Engine {
     pub instance: wgpu::Instance,
     pub surface: wgpu::Surface,
     pub adapter: wgpu::Adapter,
@@ -10,14 +10,13 @@ pub struct Engine<T> {
     pub swap_chain_descriptor: wgpu::SwapChainDescriptor,
     pub swap_chain: wgpu::SwapChain,
     pub size: winit::dpi::PhysicalSize<u32>,
-    pub renderers: Vec<Box<dyn renderer::Renderer<T>>>,
-    pub get_state: Box<dyn Fn(&f32) -> T>,
+    pub renderers: Vec<Box<dyn renderer::Renderer>>,
     pub timer: timer::Timer,
     pub music: Option<music::Music>,
 }
 
-impl<T> Engine<T> {
-    pub async fn new(window: &Window, get_state: Box<dyn Fn(&f32) -> T>) -> Self {
+impl Engine {
+    pub async fn new(window: &Window) -> Self {
         let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
         let (size, surface) = unsafe {
             let size = window.inner_size();
@@ -63,7 +62,6 @@ impl<T> Engine<T> {
             swap_chain_descriptor,
             swap_chain,
             size,
-            get_state,
             renderers: vec![],
             timer: timer::Timer::new(),
             music: None,
@@ -81,12 +79,12 @@ impl<T> Engine<T> {
         buffer
     }
 
-    pub fn add_renderer(&mut self, renderer: Box<dyn renderer::Renderer<T>>) {
+    pub fn add_renderer(&mut self, renderer: Box<dyn renderer::Renderer>) {
         self.renderers.push(renderer);
     }
 
     pub fn input(&mut self, event: &WindowEvent) -> bool {
-        const REWIND_AMOUNT: f32 = 10.0;
+        const REWIND_AMOUNT: f64 = 10.0;
 
         match event {
             WindowEvent::KeyboardInput { input, .. } => match input {
@@ -135,13 +133,12 @@ impl<T> Engine<T> {
             });
 
         let time = self.timer.elapsed();
-        let state = (self.get_state)(&time);
         for renderer in self.renderers.iter_mut() {
             let mut context = renderer::RenderingContext {
                 device: &self.device,
                 encoder: &mut encoder,
                 output: &frame.output.view,
-                state: &state,
+                time,
                 screen_size: &self.size,
             };
             if renderer.should_render(&context) {
@@ -153,7 +150,7 @@ impl<T> Engine<T> {
         self.queue.submit(vec![encoder.finish()]);
     }
 
-    pub fn forward(&mut self, seconds: f32) {
+    pub fn forward(&mut self, seconds: f64) {
         if let Some(music) = self.music.as_mut() {
             music.forward(seconds);
         }
