@@ -22,13 +22,13 @@ impl Object for Texture {
     }
 }
 
-pub struct TextureBuilder<'a, T> {
-    pub engine: &'a engine::Engine<T>,
+pub struct TextureBuilder<'a> {
+    pub engine: &'a engine::Engine,
     pub command_buffers: Vec<wgpu::CommandBuffer>,
 }
 
-impl<'a, T> TextureBuilder<'a, T> {
-    pub fn new(engine: &'a engine::Engine<T>) -> Self {
+impl<'a> TextureBuilder<'a> {
+    pub fn new(engine: &'a engine::Engine) -> Self {
         TextureBuilder {
             engine,
             command_buffers: vec![],
