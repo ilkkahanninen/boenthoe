@@ -44,8 +44,7 @@ unsafe impl bytemuck::Zeroable for LightModel {}
 unsafe impl bytemuck::Pod for LightModel {}
 
 impl TestEffect {
-    pub fn new(engine: &engine::Engine) -> Box<Self> {
-        let mut library = assets::AssetLibrary::new("src/demo"); // TODO: Provide asset library by engine
+    pub fn attach(engine: &mut engine::Engine) {
         let device = &engine.device;
 
         let resources = include_resources!("assets/cube.mtl", "assets/cube-diffuse.jpg"); // TODO: Move responsibility of this to AssetLibrary
@@ -65,10 +64,11 @@ impl TestEffect {
 
         let depth_buffer = texture_builder.depth_stencil_buffer("depth_buffer");
 
-        let vertex_shader = pipeline::shader(device, &library.file("shaders/shader.vert")).unwrap();
+        let vertex_shader =
+            pipeline::shader(device, &engine.assets.file("shaders/shader.vert")).unwrap();
 
         let fragment_shader =
-            pipeline::shader(device, &library.file("shaders/shader.frag")).unwrap();
+            pipeline::shader(device, &engine.assets.file("shaders/shader.frag")).unwrap();
 
         let layout = device.create_pipeline_layout(&pipeline::layout(&vec![
             view.get_layout(),
@@ -102,14 +102,14 @@ impl TestEffect {
             alpha_to_coverage_enabled: false,
         });
 
-        Box::new(Self {
+        engine.add_renderer(Box::new(Self {
             pipeline,
             model,
             view,
             instances,
             depth_buffer,
             light,
-        })
+        }));
     }
 }
 

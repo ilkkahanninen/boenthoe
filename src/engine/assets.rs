@@ -28,8 +28,13 @@ impl Asset {
 impl From<PathBuf> for Asset {
     fn from(path: PathBuf) -> Self {
         let name = String::from(path.file_name().unwrap().to_string_lossy());
-        let data = fs::read(&path)
-            .or_else(|err| Err(format!("Loading asset `{}` failed: {:?}", &name, err)));
+        let data = fs::read(&path).or_else(|err| {
+            Err(format!(
+                "Loading asset `{}` failed: {:?}",
+                path.to_string_lossy(),
+                err
+            ))
+        });
         let asset_type = AssetType::from(name.as_str());
         Self {
             name,

@@ -13,11 +13,12 @@ pub struct Engine {
     pub renderers: Vec<Box<dyn renderer::Renderer>>,
     pub timer: timer::Timer,
     pub music: Option<music::Music>,
+    pub assets: assets::AssetLibrary,
 }
 
 #[allow(dead_code)]
 impl Engine {
-    pub async fn new(window: &Window) -> Self {
+    pub async fn new(window: &Window, assets_path: &str) -> Self {
         let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
         let (size, surface) = unsafe {
             let size = window.inner_size();
@@ -54,6 +55,8 @@ impl Engine {
         };
         let swap_chain = device.create_swap_chain(&surface, &swap_chain_descriptor);
 
+        let assets = assets::AssetLibrary::new(assets_path);
+
         Self {
             instance,
             surface,
@@ -66,6 +69,7 @@ impl Engine {
             renderers: vec![],
             timer: timer::Timer::new(),
             music: None,
+            assets,
         }
     }
 

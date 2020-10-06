@@ -4,11 +4,11 @@ use crate::engine::engine::Engine;
 use futures::executor::block_on;
 
 pub fn init(window: &mut winit::window::Window) -> Engine {
-    let mut engine = block_on(Engine::new(window));
+    let mut engine = block_on(Engine::new(window, "src/demo"));
 
     // engine.set_music(include_bytes!("assets/musa.mp3"));
 
-    engine.add_renderer(testeffect::TestEffect::new(&engine));
+    testeffect::TestEffect::attach(&mut engine);
 
     engine
 }
