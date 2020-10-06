@@ -30,6 +30,16 @@ pub struct LightModel {
     pub color: cgmath::Vector3<f32>,
 }
 
+impl Default for LightModel {
+    fn default() -> Self {
+        Self {
+            position: cgmath::Vector3::new(0.0, 10.0, 0.0),
+            color: cgmath::Vector3::new(1.0, 1.0, 1.0),
+            _padding: 0,
+        }
+    }
+}
+
 unsafe impl bytemuck::Zeroable for LightModel {}
 unsafe impl bytemuck::Pod for LightModel {}
 
@@ -39,20 +49,9 @@ impl TestEffect {
 
         let resources = include_resources!("assets/cube.mtl", "assets/cube-diffuse.jpg");
 
-        let view = view::ViewObject::new(
-            device,
-            view::ViewModel {
-                camera: camera::Camera {
-                    eye: (0.0, 0.0, -10.0).into(),
-                    target: (0.0, 0.0, 0.0).into(),
-                    up: cgmath::Vector3::unit_y(),
-                    aspect: engine.size.width as f32 / engine.size.height as f32,
-                    fovy: 45.0,
-                    znear: 0.1,
-                    zfar: 100.0,
-                },
-            },
-        );
+        let view = view::ViewObject::new(device);
+        let instances = storagebuffer::StorageVecObject::new(device, 20);
+        let light = storagebuffer::StorageObject::default(device);
 
         let mut texture_builder = texture::TextureBuilder::new(engine);
         let model = model::Model::load_obj_buf(
@@ -64,25 +63,6 @@ impl TestEffect {
         .expect("Could not load model");
 
         let depth_buffer = texture_builder.depth_stencil_buffer("depth_buffer");
-
-        let instances = storagebuffer::StorageVecObject::new(
-            device,
-            vec![
-                InstanceModel {
-                    transform: Transform::new()
-                };
-                20
-            ],
-        );
-
-        let light = storagebuffer::StorageObject::new(
-            device,
-            LightModel {
-                position: cgmath::Vector3::new(0.0, 10.0, 0.0),
-                color: cgmath::Vector3::new(1.0, 1.0, 1.0),
-                _padding: 0,
-            },
-        );
 
         let vertex_shader = pipeline::shader(
             device,

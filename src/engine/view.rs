@@ -5,6 +5,22 @@ pub struct ViewModel {
     pub camera: Camera,
 }
 
+impl Default for ViewModel {
+    fn default() -> Self {
+        Self {
+            camera: Camera {
+                eye: (0.0, 0.0, -10.0).into(),
+                target: (0.0, 0.0, 0.0).into(),
+                up: cgmath::Vector3::unit_y(),
+                aspect: 16.0 / 9.0,
+                fovy: 45.0,
+                znear: 0.1,
+                zfar: 100.0,
+            },
+        }
+    }
+}
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct ViewUniform {
@@ -30,10 +46,14 @@ pub struct ViewObject {
 }
 
 impl ViewObject {
-    pub fn new(device: &wgpu::Device, model: ViewModel) -> Self {
+    pub fn new(device: &wgpu::Device) -> Self {
+        Self::init(device, ViewModel::default())
+    }
+
+    pub fn init(device: &wgpu::Device, model: ViewModel) -> Self {
         Self {
             model,
-            storage: StorageObject::new(device, ViewUniform::from(&model)),
+            storage: StorageObject::init(device, ViewUniform::from(&model)),
         }
     }
 

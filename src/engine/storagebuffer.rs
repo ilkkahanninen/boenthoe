@@ -12,7 +12,18 @@ impl<T> StorageObject<T>
 where
     T: bytemuck::Pod,
 {
-    pub fn new(device: &wgpu::Device, initial_data: T) -> Self {
+    pub fn new(device: &wgpu::Device) -> Self {
+        Self::init(device, T::zeroed())
+    }
+
+    pub fn default(device: &wgpu::Device) -> Self
+    where
+        T: Default,
+    {
+        Self::init(device, T::default())
+    }
+
+    pub fn init(device: &wgpu::Device, initial_data: T) -> Self {
         let buffer = Self::create_buffer(device, &initial_data, true);
 
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -92,7 +103,18 @@ impl<T> StorageVecObject<T>
 where
     T: bytemuck::Pod,
 {
-    pub fn new(device: &wgpu::Device, initial_data: Vec<T>) -> Self {
+    pub fn new(device: &wgpu::Device, item_count: usize) -> Self {
+        Self::init(device, vec![T::zeroed(); item_count])
+    }
+
+    pub fn default(device: &wgpu::Device, item_count: usize) -> Self
+    where
+        T: Default,
+    {
+        Self::init(device, vec![T::default(); item_count])
+    }
+
+    pub fn init(device: &wgpu::Device, initial_data: Vec<T>) -> Self {
         let buffer = Self::create_buffer(device, &initial_data, true);
 
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
