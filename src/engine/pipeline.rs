@@ -118,7 +118,8 @@ pub fn shader(device: &wgpu::Device, asset: &Asset) -> Result<wgpu::ShaderModule
         AssetType::GlslFragmentShader => shaderc::ShaderKind::Fragment,
         e => return Err(format!("Unsupported asset type: {:?}", e)),
     };
-    let glsl = std::str::from_utf8(&asset.data)
+    let data = asset.data.clone()?;
+    let glsl = std::str::from_utf8(&data)
         .or_else(|err| Err(format!("UTF-8 error at {}", err.valid_up_to())))?;
     build_shader(device, glsl, &asset.name, kind)
 }

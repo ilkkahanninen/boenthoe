@@ -45,9 +45,10 @@ unsafe impl bytemuck::Pod for LightModel {}
 
 impl TestEffect {
     pub fn new(engine: &engine::Engine) -> Box<Self> {
+        let mut library = assets::AssetLibrary::new("src/demo"); // TODO: Provide asset library by engine
         let device = &engine.device;
 
-        let resources = include_resources!("assets/cube.mtl", "assets/cube-diffuse.jpg");
+        let resources = include_resources!("assets/cube.mtl", "assets/cube-diffuse.jpg"); // TODO: Move responsibility of this to AssetLibrary
 
         let view = view::ViewObject::new(device);
         let instances = storagebuffer::StorageVecObject::new(device, 20);
@@ -64,25 +65,10 @@ impl TestEffect {
 
         let depth_buffer = texture_builder.depth_stencil_buffer("depth_buffer");
 
-        let vertex_shader = pipeline::shader(
-            device,
-            &assets::Asset {
-                data: include_bytes!("shaders/shader.vert").to_vec(),
-                name: "shader.vert".into(),
-                asset_type: assets::AssetType::GlslVertexShader,
-            },
-        )
-        .unwrap();
+        let vertex_shader = pipeline::shader(device, &library.file("shaders/shader.vert")).unwrap();
 
-        let fragment_shader = pipeline::shader(
-            device,
-            &assets::Asset {
-                data: include_bytes!("shaders/shader.frag").to_vec(),
-                name: "shader.frag".into(),
-                asset_type: assets::AssetType::GlslFragmentShader,
-            },
-        )
-        .unwrap();
+        let fragment_shader =
+            pipeline::shader(device, &library.file("shaders/shader.frag")).unwrap();
 
         let layout = device.create_pipeline_layout(&pipeline::layout(&vec![
             view.get_layout(),
