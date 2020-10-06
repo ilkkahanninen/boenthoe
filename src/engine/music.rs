@@ -65,7 +65,6 @@ impl Music {
             .expect("Could not find supported audio config")
             .with_sample_rate(self.sample_rate);
 
-        println!("Play music");
         let buffer = self.buffer.clone();
         let position = self.position.clone();
 

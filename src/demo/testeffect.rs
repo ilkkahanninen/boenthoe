@@ -115,7 +115,6 @@ impl TestEffect {
             light.get_layout(),
         ]));
 
-        println!("Gofdfsfds");
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
             layout: Some(&layout),
@@ -137,7 +136,6 @@ impl TestEffect {
             alpha_to_coverage_enabled: false,
         });
 
-        println!("GofdfsfdsXXX");
         Box::new(Self {
             pipeline,
             model,
