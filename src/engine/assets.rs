@@ -9,5 +9,5 @@ pub struct Asset {
 pub enum AssetType {
     GlslVertexShader,
     GlslFragmentShader,
-    PngImage,
+    Unknown,
 }

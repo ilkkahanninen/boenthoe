@@ -1,5 +1,5 @@
 pub trait Renderer {
-    fn should_render(&self, context: &RenderingContext) -> bool {
+    fn should_render(&self, _context: &RenderingContext) -> bool {
         true
     }
     fn update(&mut self, context: &mut RenderingContext);

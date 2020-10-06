@@ -15,6 +15,7 @@ pub struct Engine {
     pub music: Option<music::Music>,
 }
 
+#[allow(dead_code)]
 impl Engine {
     pub async fn new(window: &Window) -> Self {
         let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
