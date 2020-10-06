@@ -10,8 +10,28 @@ pub struct TestEffect {
     depth_buffer: texture::Texture,
     view: view::ViewObject,
     instances: storagebuffer::StorageVecObject<InstanceModel>,
-    light: light::LightObject,
+    light: storagebuffer::StorageObject<LightModel>,
 }
+
+#[derive(Debug, Copy, Clone)]
+#[repr(C)]
+pub struct InstanceModel {
+    pub transform: Transform,
+}
+
+unsafe impl bytemuck::Zeroable for InstanceModel {}
+unsafe impl bytemuck::Pod for InstanceModel {}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct LightModel {
+    pub position: cgmath::Vector3<f32>,
+    pub _padding: u32,
+    pub color: cgmath::Vector3<f32>,
+}
+
+unsafe impl bytemuck::Zeroable for LightModel {}
+unsafe impl bytemuck::Pod for LightModel {}
 
 impl TestEffect {
     pub fn new(engine: &engine::Engine) -> Box<Self> {
@@ -45,7 +65,6 @@ impl TestEffect {
 
         let depth_buffer = texture_builder.depth_stencil_buffer("depth_buffer");
 
-        // Instance buffer
         let instances = storagebuffer::StorageVecObject::new(
             device,
             vec![
@@ -56,18 +75,14 @@ impl TestEffect {
             ],
         );
 
-        let light = light::LightObject::new(device, light::LightModel::default());
-
-        let layout = device.create_pipeline_layout(&pipeline::layout(&vec![
-            &view.bind_group_layout,
-            &model.materials[0]
-                .diffuse_texture
-                .as_ref()
-                .unwrap()
-                .get_layout(),
-            &instances.bind_group_layout,
-            &light.bind_group_layout,
-        ]));
+        let light = storagebuffer::StorageObject::new(
+            device,
+            LightModel {
+                position: cgmath::Vector3::new(0.0, 10.0, 0.0),
+                color: cgmath::Vector3::new(1.0, 1.0, 1.0),
+                _padding: 0,
+            },
+        );
 
         let vertex_shader = pipeline::shader(
             device,
@@ -89,6 +104,18 @@ impl TestEffect {
         )
         .unwrap();
 
+        let layout = device.create_pipeline_layout(&pipeline::layout(&vec![
+            view.get_layout(),
+            model.materials[0]
+                .diffuse_texture
+                .as_ref()
+                .unwrap()
+                .get_layout(),
+            instances.get_layout(),
+            light.get_layout(),
+        ]));
+
+        println!("Gofdfsfds");
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
             layout: Some(&layout),
@@ -110,6 +137,7 @@ impl TestEffect {
             alpha_to_coverage_enabled: false,
         });
 
+        println!("GofdfsfdsXXX");
         Box::new(Self {
             pipeline,
             model,
@@ -133,13 +161,13 @@ impl renderer::Renderer for TestEffect {
         //     .into();
         self.view.update(ctx.device, ctx.encoder);
 
-        self.light.model.position.x = (time * 0.1).sin() * 10.0;
-        self.light.model.position.y = (time * 0.13).sin() * 10.0;
-        self.light.model.position.z = (time * 0.12).cos() * 10.0;
-        self.light.update(ctx.device, ctx.encoder);
+        self.light.data.position.x = (time).sin() * 10.0;
+        self.light.data.position.y = 15.0 + (time * 1.3).sin() * 10.0;
+        self.light.data.position.z = (time * 1.2).cos() * 10.0;
+        self.light.copy_to_gpu(ctx.device, ctx.encoder);
 
         for (index, instance) in self.instances.data.iter_mut().enumerate() {
-            let a = index as f32 + 0.1;
+            let a = index as f32 + 1.0;
             instance.transform = transform::Transform::new()
                 .translate((a * 1.2).sin(), (a * 1.3).cos(), (a * 0.7).sin() - a.cos())
                 .rotate(
@@ -191,11 +219,3 @@ impl renderer::Renderer for TestEffect {
         render_pass.draw_indexed(0..mesh.num_elements, 0, self.instances.all());
     }
 }
-
-#[derive(Debug, Copy, Clone)]
-pub struct InstanceModel {
-    pub transform: Transform,
-}
-
-unsafe impl bytemuck::Zeroable for InstanceModel {}
-unsafe impl bytemuck::Pod for InstanceModel {}

@@ -1,11 +1,11 @@
-use crate::engine::{object::Object, transform::Transform};
+use crate::engine::object::Object;
 use wgpu::util::DeviceExt;
 
 pub struct StorageObject<T> {
     pub data: T,
-    pub buffer: wgpu::Buffer,
-    pub bind_group_layout: wgpu::BindGroupLayout,
-    pub bind_group: wgpu::BindGroup,
+    buffer: wgpu::Buffer,
+    bind_group_layout: wgpu::BindGroupLayout,
+    bind_group: wgpu::BindGroup,
 }
 
 impl<T> StorageObject<T>
@@ -19,7 +19,7 @@ where
             label: None,
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
-                visibility: wgpu::ShaderStage::VERTEX,
+                visibility: wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
                 ty: wgpu::BindingType::StorageBuffer {
                     dynamic: false,
                     readonly: true,
@@ -83,9 +83,9 @@ impl<T> Object for StorageObject<T> {
 
 pub struct StorageVecObject<T> {
     pub data: Vec<T>,
-    pub buffer: wgpu::Buffer,
-    pub bind_group_layout: wgpu::BindGroupLayout,
-    pub bind_group: wgpu::BindGroup,
+    buffer: wgpu::Buffer,
+    bind_group_layout: wgpu::BindGroupLayout,
+    bind_group: wgpu::BindGroup,
 }
 
 impl<T> StorageVecObject<T>
@@ -99,7 +99,7 @@ where
             label: None,
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
-                visibility: wgpu::ShaderStage::VERTEX,
+                visibility: wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
                 ty: wgpu::BindingType::StorageBuffer {
                     dynamic: false,
                     readonly: true,

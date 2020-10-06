@@ -50,7 +50,7 @@ void main() {
     vec4 object_color = texture(sampler2D(t_diffuse, s_diffuse), vn);
 
     // Mix lights
-    vec3 result = (ambient_color + diffuse_color + specular_color) * object_color.xyz;
+    vec3 result = (ambient_color + diffuse_color + specular_color); // * object_color.xyz;
 
     f_color = vec4(result, object_color.a);
 }
