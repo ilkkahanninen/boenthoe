@@ -153,13 +153,9 @@ impl renderer::Renderer for TestEffect {
     fn update(&mut self, ctx: &mut renderer::RenderingContext) {
         let time = ctx.time as f32;
 
-        // self.view.model.camera.eye = (
-        //     ctx.state.cam_x as f32,
-        //     ctx.state.cam_y as f32,
-        //     ctx.state.cam_z as f32,
-        // )
-        //     .into();
-        self.view.update(ctx.device, ctx.encoder);
+        self.view.model.camera.eye =
+            ((time * 2.3).sin() * 5.0, (time * 3.0).sin() * 5.0, -10.0).into();
+        self.view.copy_to_gpu(ctx.device, ctx.encoder);
 
         self.light.data.position.x = (time).sin() * 10.0;
         self.light.data.position.y = 15.0 + (time * 1.3).sin() * 10.0;
