@@ -1,5 +1,6 @@
 use crate::engine::model::Vertex;
 use crate::engine::object::Object;
+use crate::engine::transform::Transform;
 use crate::engine::*;
 use crate::include_resources;
 
@@ -8,7 +9,7 @@ pub struct TestEffect {
     model: model::Model,
     depth_buffer: texture::Texture,
     view: view::ViewObject,
-    instances: instances::InstanceListObject,
+    instances: storagebuffer::StorageVecObject<InstanceModel>,
     light: light::LightObject,
 }
 
@@ -45,8 +46,15 @@ impl TestEffect {
         let depth_buffer = texture_builder.depth_stencil_buffer("depth_buffer");
 
         // Instance buffer
-        let instances =
-            instances::InstanceListObject::new(device, vec![instances::InstanceModel::new(); 20]);
+        let instances = storagebuffer::StorageVecObject::new(
+            device,
+            vec![
+                InstanceModel {
+                    transform: Transform::new()
+                };
+                20
+            ],
+        );
 
         let light = light::LightObject::new(device, light::LightModel::default());
 
@@ -130,7 +138,7 @@ impl renderer::Renderer for TestEffect {
         self.light.model.position.z = (time * 0.12).cos() * 10.0;
         self.light.update(ctx.device, ctx.encoder);
 
-        for (index, instance) in self.instances.models.iter_mut().enumerate() {
+        for (index, instance) in self.instances.data.iter_mut().enumerate() {
             let a = index as f32 + 0.1;
             instance.transform = transform::Transform::new()
                 .translate((a * 1.2).sin(), (a * 1.3).cos(), (a * 0.7).sin() - a.cos())
@@ -141,7 +149,7 @@ impl renderer::Renderer for TestEffect {
                     cgmath::Rad(a * time * 0.2),
                 )
         }
-        self.instances.update(ctx.device, ctx.encoder);
+        self.instances.copy_to_gpu(ctx.device, ctx.encoder);
     }
 
     fn render(&mut self, ctx: &mut renderer::RenderingContext) {
@@ -183,3 +191,11 @@ impl renderer::Renderer for TestEffect {
         render_pass.draw_indexed(0..mesh.num_elements, 0, self.instances.all());
     }
 }
+
+#[derive(Debug, Copy, Clone)]
+pub struct InstanceModel {
+    pub transform: Transform,
+}
+
+unsafe impl bytemuck::Zeroable for InstanceModel {}
+unsafe impl bytemuck::Pod for InstanceModel {}
