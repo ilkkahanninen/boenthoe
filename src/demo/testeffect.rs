@@ -1,7 +1,4 @@
-use crate::engine::model::Vertex;
-use crate::engine::object::Object;
-use crate::engine::transform::Transform;
-use crate::engine::*;
+use crate::engine::{model::Vertex, object::Object, transform::Transform, *};
 use crate::include_resources;
 
 pub struct TestEffect {
@@ -44,7 +41,7 @@ unsafe impl bytemuck::Zeroable for LightModel {}
 unsafe impl bytemuck::Pod for LightModel {}
 
 impl TestEffect {
-    pub fn attach(engine: &mut engine::Engine) {
+    pub fn attach(engine: &mut engine::Engine) -> Result<(), String> {
         let device = &engine.device;
 
         let resources = include_resources!("assets/cube.mtl", "assets/cube-diffuse.jpg"); // TODO: Move responsibility of this to AssetLibrary
@@ -64,11 +61,8 @@ impl TestEffect {
 
         let depth_buffer = texture_builder.depth_stencil_buffer("depth_buffer");
 
-        let vertex_shader =
-            pipeline::shader(device, &engine.assets.file("shaders/shader.vert")).unwrap();
-
-        let fragment_shader =
-            pipeline::shader(device, &engine.assets.file("shaders/shader.frag")).unwrap();
+        let vertex_shader = shaders::build(device, &engine.assets.file("shaders/shader.vert"))?;
+        let fragment_shader = shaders::build(device, &engine.assets.file("shaders/shader.frag"))?;
 
         let layout = device.create_pipeline_layout(&pipeline::layout(&vec![
             view.get_layout(),
@@ -110,6 +104,8 @@ impl TestEffect {
             depth_buffer,
             light,
         }));
+
+        Ok(())
     }
 }
 

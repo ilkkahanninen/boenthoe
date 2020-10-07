@@ -4,23 +4,55 @@ use std::{
     rc::Rc,
 };
 
+#[derive(Debug, Copy, Clone)]
+pub enum AssetType {
+    GlslVertexShader,
+    GlslFragmentShader,
+    Unknown,
+}
+
 #[derive(Debug, Clone)]
-pub struct Asset {
-    pub name: String,
-    pub path: Option<PathBuf>,
-    pub asset_type: AssetType,
-    pub state: AssetState,
-    pub data: Result<Vec<u8>, String>,
+pub enum Asset {
+    Pending {
+        name: String,
+        path: Option<PathBuf>,
+    },
+    Ready {
+        name: String,
+        path: Option<PathBuf>,
+        data: Vec<u8>,
+    },
+    Error {
+        name: String,
+        message: String,
+    },
 }
 
 impl Asset {
-    pub fn new(name: &str) -> Self {
-        Self {
-            name: name.into(),
-            path: None,
-            data: Err("Uninitialized asset".into()),
-            asset_type: name.into(),
-            state: AssetState::Uninitialized,
+    pub fn get_type(&self) -> AssetType {
+        let name = match self {
+            Self::Pending { name, .. } | Self::Ready { name, .. } | Self::Error { name, .. } => {
+                name
+            }
+        };
+        match Path::new(name).extension() {
+            Some(ext) => match ext.to_string_lossy().to_lowercase().as_str() {
+                "vert" => AssetType::GlslVertexShader,
+                "frag" => AssetType::GlslFragmentShader,
+                _ => AssetType::Unknown,
+            },
+            None => AssetType::Unknown,
+        }
+    }
+
+    pub fn make_pending(&mut self) {
+        if let Self::Ready {
+            name,
+            path,
+            data: _,
+        } = self.to_owned()
+        {
+            *self = Self::Pending { name, path }
         }
     }
 }
@@ -35,54 +67,20 @@ impl From<PathBuf> for Asset {
                 err
             ))
         });
-        let asset_type = AssetType::from(name.as_str());
-        Self {
-            name,
-            path: Some(path),
-            data,
-            asset_type,
-            state: AssetState::Loaded,
-        }
-    }
-}
-
-#[derive(Debug, Copy, Clone)]
-pub enum AssetState {
-    /// An empty asset
-    Uninitialized,
-    /// Loading asset data from file
-    Loading,
-    /// Data loaded from file or memory and must be consumed immediately
-    Loaded,
-    /// Pending for file changes
-    Pending,
-}
-
-#[derive(Debug, Copy, Clone)]
-pub enum AssetType {
-    GlslVertexShader,
-    GlslFragmentShader,
-    Unknown,
-}
-
-impl From<&str> for AssetType {
-    fn from(s: &str) -> Self {
-        match Path::new(s).extension() {
-            Some(ext) => match ext.to_string_lossy().to_lowercase().as_str() {
-                "vert" => Self::GlslVertexShader,
-                "frag" => Self::GlslFragmentShader,
-                _ => Self::Unknown,
+        match data {
+            Ok(data) => Asset::Ready {
+                name,
+                path: Some(path),
+                data,
             },
-            None => Self::Unknown,
+            Err(message) => Asset::Error { name, message },
         }
     }
 }
-
-pub type SharedAsset = Rc<Asset>;
 
 pub struct AssetLibrary {
     asset_path: String,
-    assets: Vec<SharedAsset>,
+    assets: Vec<Rc<Asset>>,
 }
 
 impl AssetLibrary {
@@ -93,9 +91,9 @@ impl AssetLibrary {
         }
     }
 
-    pub fn file(&mut self, filename: &str) -> SharedAsset {
+    pub fn file(&mut self, filename: &str) -> Rc<Asset> {
         let path = Path::new(&self.asset_path).join(filename);
-        let asset = SharedAsset::new(path.into());
+        let asset = Rc::<Asset>::new(path.into());
         self.assets.push(asset.clone());
         asset.clone()
     }

@@ -22,6 +22,8 @@ fn main() {
         fullscreen: !opts.window,
     });
 
-    let engine = demo::init(&mut window.window);
-    window.run(engine);
+    match demo::init(&mut window.window) {
+        Ok(engine) => window.run(engine),
+        Err(err) => panic!("Demo initialization failed:\n\n{:?}", err),
+    }
 }
