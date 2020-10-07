@@ -8,6 +8,7 @@ pub mod music;
 pub mod object;
 pub mod pipeline;
 pub mod renderer;
+pub mod scripts;
 pub mod shaders;
 pub mod storagebuffer;
 pub mod texture;

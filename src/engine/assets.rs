@@ -8,6 +8,7 @@ use std::{
 pub enum AssetType {
     GlslVertexShader,
     GlslFragmentShader,
+    BoenthoeScript,
     Unknown,
 }
 
@@ -39,6 +40,7 @@ impl Asset {
             Some(ext) => match ext.to_string_lossy().to_lowercase().as_str() {
                 "vert" => AssetType::GlslVertexShader,
                 "frag" => AssetType::GlslFragmentShader,
+                "boe" => AssetType::BoenthoeScript,
                 _ => AssetType::Unknown,
             },
             None => AssetType::Unknown,

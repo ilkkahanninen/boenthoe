@@ -2,7 +2,7 @@ use crate::{ast::*, envelope, envelope::Envelope};
 use std::collections::HashMap;
 
 type Number = f64;
-type EnvelopeFn = Box<dyn Envelope>;
+pub type EnvelopeFn = Box<dyn Envelope>;
 
 impl std::fmt::Debug for EnvelopeFn {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

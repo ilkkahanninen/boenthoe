@@ -8,6 +8,7 @@ pub struct TestEffect {
     view: view::ViewObject,
     instances: storagebuffer::StorageVecObject<InstanceModel>,
     light: storagebuffer::StorageObject<LightModel>,
+    script: scripts::Script,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -63,6 +64,7 @@ impl TestEffect {
 
         let vertex_shader = shaders::build(device, &engine.assets.file("shaders/shader.vert"))?;
         let fragment_shader = shaders::build(device, &engine.assets.file("shaders/shader.frag"))?;
+        let script = scripts::build(&engine.assets.file("assets/camerajump.boe"))?;
 
         let layout = device.create_pipeline_layout(&pipeline::layout(&vec![
             view.get_layout(),
@@ -103,6 +105,7 @@ impl TestEffect {
             instances,
             depth_buffer,
             light,
+            script,
         }));
 
         Ok(())
@@ -113,8 +116,14 @@ impl renderer::Renderer for TestEffect {
     fn update(&mut self, ctx: &mut renderer::RenderingContext) {
         let time = ctx.time as f32;
 
-        self.view.model.camera.eye =
-            ((time * 2.3).sin() * 5.0, (time * 3.0).sin() * 5.0, -10.0).into();
+        self.script.set_time(ctx.time);
+
+        self.view.model.camera.eye = (
+            self.script.get("eye_x").to_f() as f32,
+            self.script.get("eye_y").to_f() as f32,
+            self.script.get("eye_z").to_f() as f32,
+        )
+            .into();
         self.view.copy_to_gpu(ctx.device, ctx.encoder);
 
         self.light.data.position.x = (time).sin() * 10.0;
