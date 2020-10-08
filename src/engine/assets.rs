@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     fs,
     path::{Path, PathBuf},
     rc::Rc,
@@ -47,14 +48,16 @@ impl Asset {
         }
     }
 
-    pub fn make_pending(&mut self) {
+    pub fn pending(&self) -> Self {
         if let Self::Ready {
             name,
             path,
             data: _,
         } = self.to_owned()
         {
-            *self = Self::Pending { name, path }
+            Self::Pending { name, path }
+        } else {
+            self.clone()
         }
     }
 }
@@ -82,21 +85,86 @@ impl From<PathBuf> for Asset {
 
 pub struct AssetLibrary {
     asset_path: String,
-    assets: Vec<Rc<Asset>>,
+    assets: HashMap<PathBuf, Rc<Asset>>,
+    watcher: Option<AssetWatcher>,
+}
+
+struct AssetWatcher {
+    watcher: notify::FsEventWatcher,
+    receiver: std::sync::mpsc::Receiver<notify::DebouncedEvent>,
 }
 
 impl AssetLibrary {
     pub fn new(asset_path: &str) -> Self {
         Self {
             asset_path: asset_path.into(),
-            assets: vec![],
+            assets: HashMap::new(),
+            watcher: None,
         }
     }
 
     pub fn file(&mut self, filename: &str) -> Rc<Asset> {
-        let path = Path::new(&self.asset_path).join(filename);
-        let asset = Rc::<Asset>::new(path.into());
-        self.assets.push(asset.clone());
+        let path = std::fs::canonicalize(Path::new(&self.asset_path).join(filename)).unwrap();
+        let asset = Rc::<Asset>::new(path.clone().into());
+        self.assets.insert(path, asset.clone());
         asset.clone()
+    }
+
+    pub fn changed(&self, filename: &str) -> Option<Rc<Asset>> {
+        for (path, asset) in self.assets.iter() {
+            match asset.as_ref() {
+                Asset::Ready { .. } => {
+                    if path.file_name().unwrap().to_string_lossy() == filename {
+                        return Some(asset.clone());
+                    }
+                }
+                _ => (),
+            }
+        }
+        None
+    }
+
+    pub fn clear_assets(&mut self) {
+        let mut new_assets = HashMap::new();
+        for (path, asset) in self.assets.iter() {
+            new_assets.insert(path.clone(), Rc::new(asset.pending()));
+        }
+        self.assets = new_assets;
+    }
+
+    pub fn start_watcher(&mut self) {
+        use notify::Watcher;
+
+        self.clear_assets();
+
+        let (tx, rx) = std::sync::mpsc::channel();
+        let mut watcher = notify::watcher(tx, std::time::Duration::from_millis(250)).unwrap();
+        watcher
+            .watch(&self.asset_path, notify::RecursiveMode::Recursive)
+            .unwrap();
+
+        self.watcher = Some(AssetWatcher {
+            watcher,
+            receiver: rx,
+        });
+    }
+
+    pub fn detect_changes(&mut self) -> bool {
+        let mut changes_detected = false;
+
+        if let Some(watcher) = &self.watcher {
+            while let Ok(event) = watcher.receiver.try_recv() {
+                if let notify::DebouncedEvent::Write(path) = event {
+                    if let Some(_) = self.assets.get(&path) {
+                        println!("Change detected: {:?}", path);
+                        self.assets
+                            .insert(path.clone(), Rc::<Asset>::new(path.clone().into()));
+                        changes_detected = true;
+                    }
+                }
+            }
+        }
+
+        changes_detected
     }
 }

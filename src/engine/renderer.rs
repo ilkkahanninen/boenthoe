@@ -1,4 +1,9 @@
+use crate::engine::assets::AssetLibrary;
+
 pub trait Renderer {
+    fn reload_assets(&mut self, _assets: &AssetLibrary) -> Result<(), String> {
+        Ok(())
+    }
     fn should_render(&self, _context: &RenderingContext) -> bool {
         true
     }

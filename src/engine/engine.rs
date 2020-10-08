@@ -123,9 +123,19 @@ impl Engine {
             music.play();
         }
         self.timer.reset();
+        self.assets.start_watcher();
     }
 
     pub fn render(&mut self) {
+        if self.assets.detect_changes() {
+            for renderer in self.renderers.iter_mut() {
+                if let Err(error) = renderer.reload_assets(&self.assets) {
+                    eprintln!("Error: {}", error);
+                }
+            }
+            self.assets.clear_assets();
+        }
+
         let frame = self
             .swap_chain
             .get_current_frame()

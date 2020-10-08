@@ -113,6 +113,15 @@ impl TestEffect {
 }
 
 impl renderer::Renderer for TestEffect {
+    fn reload_assets(&mut self, assets: &assets::AssetLibrary) -> Result<(), String> {
+        if let Some(script) = assets.changed("camerajump.boe") {
+            println!("TestEffect: reload script");
+            self.script = scripts::build(&script)?;
+        }
+
+        Ok(())
+    }
+
     fn update(&mut self, ctx: &mut renderer::RenderingContext) {
         let time = ctx.time as f32;
 
