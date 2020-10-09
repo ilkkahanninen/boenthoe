@@ -14,6 +14,7 @@ pub struct Engine {
     pub timer: timer::Timer,
     pub music: Option<music::Music>,
     pub assets: assets::AssetLibrary,
+    pub ext_command_buffers: Vec<wgpu::CommandBuffer>,
 }
 
 #[allow(dead_code)]
@@ -70,6 +71,7 @@ impl Engine {
             timer: timer::Timer::new(),
             music: None,
             assets,
+            ext_command_buffers: vec![],
         }
     }
 
@@ -86,6 +88,10 @@ impl Engine {
 
     pub fn add_renderer(&mut self, renderer: Box<dyn renderer::Renderer>) {
         self.renderers.push(renderer);
+    }
+
+    pub fn add_command_buffer(&mut self, command_buffer: wgpu::CommandBuffer) {
+        self.ext_command_buffers.push(command_buffer);
     }
 
     pub fn input(&mut self, event: &WindowEvent) -> bool {
@@ -119,6 +125,7 @@ impl Engine {
     }
 
     pub fn init(&mut self) {
+        self.process_ext_command_buffers();
         if let Some(music) = self.music.as_mut() {
             music.play();
         }
@@ -133,6 +140,7 @@ impl Engine {
                     eprintln!("Error: {}", error);
                 }
             }
+            self.process_ext_command_buffers();
             self.assets.clear_assets();
         }
 
@@ -165,10 +173,16 @@ impl Engine {
         self.queue.submit(vec![encoder.finish()]);
     }
 
-    pub fn forward(&mut self, seconds: f64) {
+    fn forward(&mut self, seconds: f64) {
         if let Some(music) = self.music.as_mut() {
             music.forward(seconds);
         }
         self.timer.forward(seconds);
+    }
+
+    fn process_ext_command_buffers(&mut self) {
+        if !self.ext_command_buffers.is_empty() {
+            self.queue.submit(self.ext_command_buffers.drain(0..));
+        }
     }
 }
