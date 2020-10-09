@@ -68,7 +68,7 @@ pub struct Model {
 
 pub struct Material {
     pub name: String,
-    pub diffuse_texture: Option<texture::Texture>,
+    pub diffuse_texture: Option<textures::Texture>,
 }
 
 pub struct Mesh {
@@ -80,40 +80,39 @@ pub struct Mesh {
 }
 
 impl Model {
-    pub fn load_obj_buf(
-        device: &wgpu::Device,
-        obj_data: &[u8],
-        resources: &Resources,
-        texture_builder: &mut texture::TextureBuilder,
-    ) -> Result<Self, failure::Error> {
+    pub fn load_obj_buf(engine: &engine::Engine, obj_data: &[u8]) -> Result<Self, failure::Error> {
         let mut reader = std::io::Cursor::new(obj_data);
-        let (obj_models, obj_materials) = tobj::load_obj_buf(&mut reader, true, |path| {
-            match resources.get(path.file_name().unwrap().to_str().unwrap()) {
-                Some(data) => tobj::load_mtl_buf(&mut std::io::Cursor::new(data)),
-                _ => Err(tobj::LoadError::OpenFileFailed),
+
+        let (obj_models, obj_materials) = {
+            tobj::load_obj_buf(&mut reader, true, |path| {
+                match engine.load_asset_from_path(path).get_data() {
+                    Ok(data) => tobj::load_mtl_buf(&mut std::io::Cursor::new(data)),
+                    _ => Err(tobj::LoadError::OpenFileFailed),
+                }
+            })?
+        };
+
+        let materials = {
+            let mut materials = Vec::new();
+            for mat in obj_materials {
+                let diffuse_path = mat.diffuse_texture;
+                let diffuse_texture = if diffuse_path.is_empty() {
+                    None
+                } else {
+                    let asset = engine.load_asset(&diffuse_path);
+                    match textures::diffuse(engine, &asset) {
+                        Ok(texture) => Some(texture),
+                        Err(_) => None,
+                    }
+                };
+
+                materials.push(Material {
+                    name: mat.name,
+                    diffuse_texture,
+                });
             }
-        })?;
-
-        let mut materials = Vec::new();
-        for mat in obj_materials {
-            let diffuse_path = mat.diffuse_texture;
-            let diffuse_texture = if diffuse_path.is_empty() {
-                None
-            } else {
-                Some(texture_builder.diffuse(
-                    &resources.get(&diffuse_path).expect(&format!(
-                        "Resource {} is not defined in the resource object",
-                        diffuse_path
-                    )),
-                    "diffuse_texture",
-                ))
-            };
-
-            materials.push(Material {
-                name: mat.name,
-                diffuse_texture,
-            });
-        }
+            materials
+        };
 
         let mut meshes = Vec::new();
         for m in obj_models {
@@ -134,17 +133,23 @@ impl Model {
                 });
             }
 
-            let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                contents: bytemuck::cast_slice(&vertices),
-                usage: wgpu::BufferUsage::VERTEX,
-                label: Some("vertex_buffer"),
-            });
+            let vertex_buffer =
+                engine
+                    .device
+                    .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                        contents: bytemuck::cast_slice(&vertices),
+                        usage: wgpu::BufferUsage::VERTEX,
+                        label: Some("vertex_buffer"),
+                    });
 
-            let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                contents: bytemuck::cast_slice(&m.mesh.indices),
-                usage: wgpu::BufferUsage::INDEX,
-                label: Some("index_buffer"),
-            });
+            let index_buffer =
+                engine
+                    .device
+                    .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                        contents: bytemuck::cast_slice(&m.mesh.indices),
+                        usage: wgpu::BufferUsage::INDEX,
+                        label: Some("index_buffer"),
+                    });
 
             meshes.push(Mesh {
                 name: m.name,

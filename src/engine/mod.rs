@@ -11,12 +11,8 @@ pub mod renderer;
 pub mod scripts;
 pub mod shaders;
 pub mod storagebuffer;
-pub mod texture;
+pub mod textures;
 pub mod timer;
 pub mod transform;
 pub mod view;
 pub mod window;
-
-pub enum EngineError {
-    AssetLoadError { asset_name: String, message: String },
-}

@@ -1,4 +1,5 @@
 use crate::engine::*;
+use std::{rc::Rc, sync::Mutex};
 use winit::{event::*, window::Window};
 
 pub struct Engine {
@@ -10,11 +11,12 @@ pub struct Engine {
     pub swap_chain_descriptor: wgpu::SwapChainDescriptor,
     pub swap_chain: wgpu::SwapChain,
     pub size: winit::dpi::PhysicalSize<u32>,
-    pub renderers: Vec<Box<dyn renderer::Renderer>>,
     pub timer: timer::Timer,
     pub music: Option<music::Music>,
-    pub assets: assets::AssetLibrary,
-    pub ext_command_buffers: Vec<wgpu::CommandBuffer>,
+
+    renderers: Mutex<Vec<Box<dyn renderer::Renderer>>>,
+    asset_library: Mutex<assets::AssetLibrary>,
+    ext_command_buffers: Mutex<Vec<wgpu::CommandBuffer>>,
 }
 
 #[allow(dead_code)]
@@ -56,7 +58,7 @@ impl Engine {
         };
         let swap_chain = device.create_swap_chain(&surface, &swap_chain_descriptor);
 
-        let assets = assets::AssetLibrary::new(assets_path);
+        let asset_library = assets::AssetLibrary::new(assets_path);
 
         Self {
             instance,
@@ -67,11 +69,12 @@ impl Engine {
             swap_chain_descriptor,
             swap_chain,
             size,
-            renderers: vec![],
             timer: timer::Timer::new(),
             music: None,
-            assets,
-            ext_command_buffers: vec![],
+
+            renderers: Mutex::new(vec![]),
+            asset_library: Mutex::new(asset_library),
+            ext_command_buffers: Mutex::new(vec![]),
         }
     }
 
@@ -79,19 +82,23 @@ impl Engine {
         self.music = Some(music::Music::from_bytes(bytes));
     }
 
-    pub fn create_render_buffer(&self) -> texture::Texture {
-        let builder = texture::TextureBuilder::new(&self);
-        let buffer = builder.color_buffer("render_buffer");
-        self.queue.submit(builder.command_buffers);
-        buffer
+    pub fn add_renderer(&self, renderer: Box<dyn renderer::Renderer>) {
+        self.renderers.lock().unwrap().push(renderer);
     }
 
-    pub fn add_renderer(&mut self, renderer: Box<dyn renderer::Renderer>) {
-        self.renderers.push(renderer);
+    pub fn add_command_buffer(&self, command_buffer: wgpu::CommandBuffer) {
+        self.ext_command_buffers
+            .lock()
+            .unwrap()
+            .push(command_buffer);
     }
 
-    pub fn add_command_buffer(&mut self, command_buffer: wgpu::CommandBuffer) {
-        self.ext_command_buffers.push(command_buffer);
+    pub fn load_asset(&self, filename: &str) -> Rc<assets::Asset> {
+        self.asset_library.lock().unwrap().file(filename)
+    }
+
+    pub fn load_asset_from_path(&self, path: &std::path::Path) -> Rc<assets::Asset> {
+        self.asset_library.lock().unwrap().path(path)
     }
 
     pub fn input(&mut self, event: &WindowEvent) -> bool {
@@ -126,23 +133,16 @@ impl Engine {
 
     pub fn init(&mut self) {
         self.process_ext_command_buffers();
+        self.asset_library.lock().unwrap().start_watcher();
         if let Some(music) = self.music.as_mut() {
             music.play();
         }
         self.timer.reset();
-        self.assets.start_watcher();
     }
 
     pub fn render(&mut self) {
-        if self.assets.detect_changes() {
-            for renderer in self.renderers.iter_mut() {
-                if let Err(error) = renderer.reload_assets(&self.assets) {
-                    eprintln!("Error: {}", error);
-                }
-            }
-            self.process_ext_command_buffers();
-            self.assets.clear_assets();
-        }
+        self.check_changed_files();
+        self.process_ext_command_buffers();
 
         let frame = self
             .swap_chain
@@ -155,8 +155,9 @@ impl Engine {
                 label: Some("Render Encoder"),
             });
 
+        let mut renderers = self.renderers.lock().unwrap();
         let time = self.timer.elapsed();
-        for renderer in self.renderers.iter_mut() {
+        for renderer in renderers.iter_mut() {
             let mut context = renderer::RenderingContext {
                 device: &self.device,
                 encoder: &mut encoder,
@@ -180,9 +181,25 @@ impl Engine {
         self.timer.forward(seconds);
     }
 
+    fn check_changed_files(&mut self) {
+        let mut assets_lock = self.asset_library.try_lock();
+        if let Ok(ref mut assets) = assets_lock {
+            if assets.detect_changes() {
+                let mut renderers = self.renderers.lock().unwrap();
+                for renderer in renderers.iter_mut() {
+                    if let Err(error) = renderer.reload_assets(&assets) {
+                        eprintln!("Error: {}", error);
+                    }
+                }
+                assets.clear_assets();
+            }
+        }
+    }
+
     fn process_ext_command_buffers(&mut self) {
-        if !self.ext_command_buffers.is_empty() {
-            self.queue.submit(self.ext_command_buffers.drain(0..));
+        let buffers = self.ext_command_buffers.get_mut().unwrap();
+        if !buffers.is_empty() {
+            self.queue.submit(buffers.drain(0..));
         }
     }
 }

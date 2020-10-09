@@ -1,5 +1,5 @@
 #[allow(dead_code)]
-use crate::engine::texture;
+use crate::engine::textures;
 
 // Default descriptors for pipeline creation
 
@@ -48,7 +48,7 @@ pub fn color_state(
 
 pub fn depth_stencil_state() -> Option<wgpu::DepthStencilStateDescriptor> {
     Some(wgpu::DepthStencilStateDescriptor {
-        format: texture::DEPTH_FORMAT,
+        format: textures::DEPTH_FORMAT,
         depth_write_enabled: true,
         depth_compare: wgpu::CompareFunction::Less,
         stencil: wgpu::StencilStateDescriptor {

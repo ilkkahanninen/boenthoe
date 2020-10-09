@@ -1,10 +1,9 @@
 use crate::engine::{model::Vertex, object::Object, transform::Transform, *};
-use crate::include_resources;
 
 pub struct TestEffect {
     pipeline: wgpu::RenderPipeline,
     model: model::Model,
-    depth_buffer: texture::Texture,
+    depth_buffer: textures::Texture,
     view: view::ViewObject,
     instances: storagebuffer::StorageVecObject<InstanceModel>,
     light: storagebuffer::StorageObject<LightModel>,
@@ -42,29 +41,21 @@ unsafe impl bytemuck::Zeroable for LightModel {}
 unsafe impl bytemuck::Pod for LightModel {}
 
 impl TestEffect {
-    pub fn attach(engine: &mut engine::Engine) -> Result<(), String> {
+    pub fn attach(engine: &engine::Engine) -> Result<(), String> {
         let device = &engine.device;
-
-        let resources = include_resources!("assets/cube.mtl", "assets/cube-diffuse.jpg"); // TODO: Move responsibility of this to AssetLibrary
 
         let view = view::ViewObject::new(device);
         let instances = storagebuffer::StorageVecObject::new(device, 20);
         let light = storagebuffer::StorageObject::default(device);
 
-        let mut texture_builder = texture::TextureBuilder::new(engine);
-        let model = model::Model::load_obj_buf(
-            device,
-            include_bytes!("assets/cube.obj"),
-            &resources,
-            &mut texture_builder,
-        )
-        .expect("Could not load model");
+        let model = model::Model::load_obj_buf(engine, include_bytes!("assets/cube.obj"))
+            .expect("Could not load model");
 
-        let depth_buffer = texture_builder.depth_stencil_buffer("depth_buffer");
+        let depth_buffer = textures::depth_buffer(engine);
 
-        let vertex_shader = shaders::build(device, &engine.assets.file("shaders/shader.vert"))?;
-        let fragment_shader = shaders::build(device, &engine.assets.file("shaders/shader.frag"))?;
-        let script = scripts::build(&engine.assets.file("assets/camerajump.boe"))?;
+        let vertex_shader = shaders::build(device, &engine.load_asset("shaders/shader.vert"))?;
+        let fragment_shader = shaders::build(device, &engine.load_asset("shaders/shader.frag"))?;
+        let script = scripts::build(&engine.load_asset("assets/camerajump.boe"))?;
 
         let layout = device.create_pipeline_layout(&pipeline::layout(&vec![
             view.get_layout(),

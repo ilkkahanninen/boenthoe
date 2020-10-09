@@ -10,6 +10,7 @@ pub enum AssetType {
     GlslVertexShader,
     GlslFragmentShader,
     BoenthoeScript,
+    PngImage,
     Unknown,
 }
 
@@ -42,6 +43,7 @@ impl Asset {
                 "vert" => AssetType::GlslVertexShader,
                 "frag" => AssetType::GlslFragmentShader,
                 "boe" => AssetType::BoenthoeScript,
+                "png" => AssetType::PngImage,
                 _ => AssetType::Unknown,
             },
             None => AssetType::Unknown,
@@ -58,6 +60,20 @@ impl Asset {
             Self::Pending { name, path }
         } else {
             self.clone()
+        }
+    }
+
+    pub fn get_data(&self) -> Result<&Vec<u8>, String> {
+        match self {
+            Asset::Ready { data, .. } => Ok(data),
+            _ => Err("Asset data is not available".into()),
+        }
+    }
+
+    pub fn new_error(name: &str, error: &str) -> Self {
+        Self::Error {
+            name: String::from(name),
+            message: String::from(error),
         }
     }
 }
@@ -108,6 +124,20 @@ impl AssetLibrary {
         let asset = Rc::<Asset>::new(path.clone().into());
         self.assets.insert(path, asset.clone());
         asset.clone()
+    }
+
+    pub fn path(&mut self, path: &Path) -> Rc<Asset> {
+        match std::fs::canonicalize(Path::new(&self.asset_path).join(path)) {
+            Ok(path) => {
+                let asset = Rc::<Asset>::new(path.clone().into());
+                self.assets.insert(path, asset.clone());
+                asset.clone()
+            }
+            Err(error) => Rc::new(Asset::new_error(
+                &path.to_string_lossy(),
+                &error.to_string(),
+            )),
+        }
     }
 
     pub fn changed(&self, filename: &str) -> Option<Rc<Asset>> {
