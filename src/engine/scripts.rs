@@ -1,19 +1,30 @@
-use crate::engine::assets::*;
+use crate::engine::{assets::*, EngineError};
 use boenthoescript::{EnvelopeFn, Vector};
 use std::collections::HashMap;
 
-pub fn build(asset: &Asset) -> Result<Script, String> {
+pub fn build(asset: &Asset) -> Result<Script, EngineError> {
     if let AssetType::BoenthoeScript = asset.get_type() {
-        match asset {
-            Asset::Ready { data, .. } => {
-                let source = std::str::from_utf8(data)
-                    .or_else(|err| Err(format!("UTF-8 error at {}", err.valid_up_to())))?;
-                boenthoescript::build(source).and_then(|functions| Ok(Script::new(functions)))
-            }
-            _ => Err("Asset not ready".into()),
-        }
+        let data = asset.data()?;
+        let source = std::str::from_utf8(data).or_else(|err| {
+            Err(EngineError::AssetParseError {
+                path: asset.path().clone(),
+                message: format!("UTF-8 error at {}", err.valid_up_to()),
+            })
+        })?;
+
+        boenthoescript::build(source)
+            .or_else(|err| {
+                Err(EngineError::AssetParseError {
+                    path: asset.path().clone(),
+                    message: err,
+                })
+            })
+            .and_then(|functions| Ok(Script::new(functions)))
     } else {
-        Err(format!("Not boenthoescript: {:?}", asset))
+        Err(EngineError::UnsupportedAssetType {
+            path: asset.path().clone(),
+            expected: ".boe".into(),
+        })
     }
 }
 

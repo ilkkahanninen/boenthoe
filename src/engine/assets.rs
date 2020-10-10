@@ -1,3 +1,4 @@
+use crate::engine::EngineError;
 use std::{
     collections::HashMap,
     fs,
@@ -43,18 +44,24 @@ impl Asset {
         }
     }
 
-    pub fn pending(&self) -> Self {
+    pub fn data(&self) -> Result<&Vec<u8>, EngineError> {
+        match self {
+            Asset::Ready { data, .. } => Ok(data),
+            Asset::Error { path, message } => Err(EngineError::AssetLoadError {
+                path: path.clone(),
+                message: message.clone(),
+            }),
+            _ => Err(EngineError::AssetNotLoaded {
+                path: self.path().clone(),
+            }),
+        }
+    }
+
+    pub fn to_pending(&self) -> Self {
         if let Self::Ready { path, data: _ } = self.to_owned() {
             Self::Pending { path }
         } else {
             self.clone()
-        }
-    }
-
-    pub fn get_data(&self) -> Result<&Vec<u8>, String> {
-        match self {
-            Asset::Ready { data, .. } => Ok(data),
-            _ => Err("Asset data is not available".into()),
         }
     }
 }
@@ -133,7 +140,7 @@ impl AssetLibrary {
     pub fn clear_assets(&mut self) {
         let mut new_assets = HashMap::new();
         for (path, asset) in self.assets.iter() {
-            new_assets.insert(path.clone(), Rc::new(asset.pending()));
+            new_assets.insert(path.clone(), Rc::new(asset.to_pending()));
         }
         self.assets = new_assets;
     }

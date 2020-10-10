@@ -85,7 +85,7 @@ impl Model {
 
         let (obj_models, obj_materials) = {
             tobj::load_obj_buf(&mut reader, true, |path| {
-                match engine.load_asset_from_path(path).get_data() {
+                match engine.load_asset_from_path(path).data() {
                     Ok(data) => tobj::load_mtl_buf(&mut std::io::Cursor::new(data)),
                     _ => Err(tobj::LoadError::OpenFileFailed),
                 }

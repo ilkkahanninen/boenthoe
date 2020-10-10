@@ -1,7 +1,7 @@
-use crate::engine::assets::AssetLibrary;
+use crate::engine::{assets::AssetLibrary, EngineError};
 
 pub trait Renderer {
-    fn reload_assets(&mut self, _assets: &AssetLibrary) -> Result<(), String> {
+    fn reload_assets(&mut self, _assets: &AssetLibrary) -> Result<(), EngineError> {
         Ok(())
     }
     fn should_render(&self, _context: &RenderingContext) -> bool {

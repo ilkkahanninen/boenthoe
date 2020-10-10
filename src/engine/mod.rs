@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+use std::path::PathBuf;
 
 pub mod assets;
 pub mod camera;
@@ -16,3 +17,11 @@ pub mod timer;
 pub mod transform;
 pub mod view;
 pub mod window;
+
+#[derive(Debug)]
+pub enum EngineError {
+    UnsupportedAssetType { path: PathBuf, expected: String },
+    AssetParseError { path: PathBuf, message: String },
+    AssetLoadError { path: PathBuf, message: String },
+    AssetNotLoaded { path: PathBuf },
+}

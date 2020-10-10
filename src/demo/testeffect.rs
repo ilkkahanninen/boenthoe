@@ -41,7 +41,7 @@ unsafe impl bytemuck::Zeroable for LightModel {}
 unsafe impl bytemuck::Pod for LightModel {}
 
 impl TestEffect {
-    pub fn attach(engine: &engine::Engine) -> Result<(), String> {
+    pub fn attach(engine: &engine::Engine) -> Result<(), EngineError> {
         let device = &engine.device;
 
         let view = view::ViewObject::new(device);
@@ -104,7 +104,7 @@ impl TestEffect {
 }
 
 impl renderer::Renderer for TestEffect {
-    fn reload_assets(&mut self, assets: &assets::AssetLibrary) -> Result<(), String> {
+    fn reload_assets(&mut self, assets: &assets::AssetLibrary) -> Result<(), EngineError> {
         if let Some(script) = assets.changed("camerajump.boe") {
             println!("TestEffect: reload script");
             self.script = scripts::build(&script)?;

@@ -1,24 +1,39 @@
-use crate::engine::assets::*;
+use crate::engine::{assets::*, EngineError};
 
-pub fn build(device: &wgpu::Device, asset: &Asset) -> Result<wgpu::ShaderModule, String> {
+pub fn build(device: &wgpu::Device, asset: &Asset) -> Result<wgpu::ShaderModule, EngineError> {
     let kind = match asset.get_type() {
         AssetType::GlslVertexShader => shaderc::ShaderKind::Vertex,
         AssetType::GlslFragmentShader => shaderc::ShaderKind::Fragment,
-        e => return Err(format!("Unsupported asset type: {:?}", e)),
-    };
-    match asset {
-        Asset::Ready { path, data, .. } => {
-            let glsl = std::str::from_utf8(data)
-                .or_else(|err| Err(format!("UTF-8 error at {}", err.valid_up_to())))?;
-            compile_into_spirv(
-                device,
-                glsl,
-                &path.file_name().unwrap().to_string_lossy(),
-                kind,
-            )
+        _ => {
+            return Err(EngineError::UnsupportedAssetType {
+                path: asset.path().clone(),
+                expected: "Vertex or fragment shader (GLSL)".into(),
+            })
         }
-        _ => Err("Asset is not ready".into()),
-    }
+    };
+
+    let data = asset.data()?;
+    let path = asset.path();
+
+    let glsl = std::str::from_utf8(data).or_else(|err| {
+        Err(EngineError::AssetParseError {
+            path: path.clone(),
+            message: format!("UTF-8 error at {}", err.valid_up_to()),
+        })
+    })?;
+
+    compile_into_spirv(
+        device,
+        glsl,
+        &path.file_name().unwrap().to_string_lossy(),
+        kind,
+    )
+    .or_else(|error| {
+        Err(EngineError::AssetParseError {
+            path: path.clone(),
+            message: error,
+        })
+    })
 }
 
 fn compile_into_spirv(

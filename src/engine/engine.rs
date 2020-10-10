@@ -188,7 +188,7 @@ impl Engine {
                 let mut renderers = self.renderers.lock().unwrap();
                 for renderer in renderers.iter_mut() {
                     if let Err(error) = renderer.reload_assets(&assets) {
-                        eprintln!("Error: {}", error);
+                        eprintln!("Error: {:?}", error);
                     }
                 }
                 assets.clear_assets();

@@ -22,7 +22,7 @@ impl Object for Texture {
     }
 }
 
-pub fn diffuse(engine: &engine::Engine, asset: &assets::Asset) -> Result<Texture, String> {
+pub fn diffuse(engine: &engine::Engine, asset: &assets::Asset) -> Result<Texture, EngineError> {
     let texture = create_rgba_texture(engine, load_image(asset)?);
     let device = &engine.device;
     let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
@@ -71,10 +71,14 @@ pub fn buffer(engine: &engine::Engine, format: wgpu::TextureFormat) -> Texture {
     }
 }
 
-fn load_image(asset: &assets::Asset) -> Result<image::DynamicImage, String> {
-    let mut image =
-        image::load_from_memory_with_format(asset.get_data()?, get_image_format(asset)?)
-            .or_else(|err| Err(format!("Loading asset {:?} failed: {:?}", asset, err)))?;
+fn load_image(asset: &assets::Asset) -> Result<image::DynamicImage, EngineError> {
+    let mut image = image::load_from_memory_with_format(asset.data()?, get_image_format(asset)?)
+        .or_else(|err| {
+            Err(EngineError::AssetParseError {
+                path: asset.path().clone(),
+                message: err.to_string(),
+            })
+        })?;
 
     let dimensions = image.dimensions();
     if let Some(target_width) = width_resize_requirement(dimensions.0) {
@@ -130,10 +134,15 @@ fn create_rgba_texture(engine: &engine::Engine, image: image::DynamicImage) -> w
     texture
 }
 
-fn get_image_format(asset: &assets::Asset) -> Result<image::ImageFormat, String> {
+fn get_image_format(asset: &assets::Asset) -> Result<image::ImageFormat, EngineError> {
     match asset.get_type() {
         assets::AssetType::PngImage => Ok(image::ImageFormat::Png),
-        _ => return Err(format!("Unsupported image type: {:?}", asset)),
+        _ => {
+            return Err(EngineError::UnsupportedAssetType {
+                path: asset.path().clone(),
+                expected: ".png".into(),
+            })
+        }
     }
 }
 
