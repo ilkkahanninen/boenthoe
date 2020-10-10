@@ -5,6 +5,7 @@ use wgpu::util::DeviceExt;
 
 pub const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
 
+#[derive(Debug)]
 pub struct Texture {
     pub bind_group_layout: wgpu::BindGroupLayout,
     pub bind_group: wgpu::BindGroup,
@@ -137,10 +138,11 @@ fn create_rgba_texture(engine: &engine::Engine, image: image::DynamicImage) -> w
 fn get_image_format(asset: &assets::Asset) -> Result<image::ImageFormat, EngineError> {
     match asset.get_type() {
         assets::AssetType::PngImage => Ok(image::ImageFormat::Png),
+        assets::AssetType::JpegImage => Ok(image::ImageFormat::Jpeg),
         _ => {
             return Err(EngineError::UnsupportedAssetType {
                 path: asset.path().clone(),
-                expected: ".png".into(),
+                expected: "JPEG or PNG".into(),
             })
         }
     }
@@ -198,7 +200,9 @@ fn default_texture_descriptor<'a>(
         sample_count: 1,
         dimension: wgpu::TextureDimension::D2,
         format,
-        usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
+        usage: wgpu::TextureUsage::SAMPLED
+            | wgpu::TextureUsage::COPY_DST
+            | wgpu::TextureUsage::OUTPUT_ATTACHMENT,
         label: None,
     }
 }

@@ -12,6 +12,7 @@ pub enum AssetType {
     GlslFragmentShader,
     BoenthoeScript,
     PngImage,
+    JpegImage,
     Unknown,
 }
 
@@ -23,6 +24,20 @@ pub enum Asset {
 }
 
 impl Asset {
+    fn load(path: PathBuf) -> Self {
+        let data = fs::read(&path).or_else(|err| {
+            Err(format!(
+                "Loading asset `{}` failed: {:?}",
+                path.to_string_lossy(),
+                err
+            ))
+        });
+        match data {
+            Ok(data) => Asset::Ready { path, data },
+            Err(message) => Asset::Error { path, message },
+        }
+    }
+
     pub fn get_type(&self) -> AssetType {
         match self.path().extension() {
             Some(ext) => match ext.to_string_lossy().to_lowercase().as_str() {
@@ -30,6 +45,7 @@ impl Asset {
                 "frag" => AssetType::GlslFragmentShader,
                 "boe" => AssetType::BoenthoeScript,
                 "png" => AssetType::PngImage,
+                "jpg" => AssetType::JpegImage,
                 _ => AssetType::Unknown,
             },
             None => AssetType::Unknown,
@@ -66,24 +82,8 @@ impl Asset {
     }
 }
 
-impl From<PathBuf> for Asset {
-    fn from(path: PathBuf) -> Self {
-        let data = fs::read(&path).or_else(|err| {
-            Err(format!(
-                "Loading asset `{}` failed: {:?}",
-                path.to_string_lossy(),
-                err
-            ))
-        });
-        match data {
-            Ok(data) => Asset::Ready { path, data },
-            Err(message) => Asset::Error { path, message },
-        }
-    }
-}
-
 pub struct AssetLibrary {
-    asset_path: String,
+    asset_path: PathBuf,
     assets: HashMap<PathBuf, Rc<Asset>>,
     watcher: Option<AssetWatcher>,
 }
@@ -94,7 +94,7 @@ struct AssetWatcher {
 }
 
 impl AssetLibrary {
-    pub fn new(asset_path: &str) -> Self {
+    pub fn new(asset_path: &Path) -> Self {
         Self {
             asset_path: asset_path.into(),
             assets: HashMap::new(),
@@ -102,25 +102,22 @@ impl AssetLibrary {
         }
     }
 
-    pub fn file(&mut self, filename: &str) -> Rc<Asset> {
-        let path = std::fs::canonicalize(Path::new(&self.asset_path).join(filename)).unwrap();
-        let asset = Rc::<Asset>::new(path.clone().into());
-        self.assets.insert(path, asset.clone());
+    /// Load asset from asset path
+    pub fn load(&mut self, path: &Path) -> Rc<Asset> {
+        let path = Path::new(&self.asset_path).join(path);
+        let exact_path = std::fs::canonicalize(&path).unwrap();
+        let relative_path = self.relative_path(&path);
+
+        println!("Load asset {:?}...", relative_path);
+        let asset = Rc::<Asset>::new(Asset::load(exact_path.clone()));
+        self.assets.insert(relative_path, asset.clone());
         asset.clone()
     }
 
-    pub fn path(&mut self, path: &Path) -> Rc<Asset> {
-        match std::fs::canonicalize(Path::new(&self.asset_path).join(path)) {
-            Ok(path) => {
-                let asset = Rc::<Asset>::new(path.clone().into());
-                self.assets.insert(path, asset.clone());
-                asset.clone()
-            }
-            Err(error) => Rc::new(Asset::Error {
-                path: path.to_path_buf(),
-                message: error.to_string(),
-            }),
-        }
+    pub fn asset_dir(&self, asset: &Asset) -> PathBuf {
+        let mut path = self.relative_path(asset.path());
+        path.pop();
+        path
     }
 
     pub fn changed(&self, filename: &str) -> Option<Rc<Asset>> {
@@ -171,7 +168,7 @@ impl AssetLibrary {
                     if let Some(_) = self.assets.get(&path) {
                         println!("Change detected: {:?}", path);
                         self.assets
-                            .insert(path.clone(), Rc::<Asset>::new(path.clone().into()));
+                            .insert(path.clone(), Rc::<Asset>::new(Asset::load(path.clone())));
                         changes_detected = true;
                     }
                 }
@@ -179,5 +176,19 @@ impl AssetLibrary {
         }
 
         changes_detected
+    }
+
+    fn relative_path(&self, path: &Path) -> PathBuf {
+        let diff = if path.is_absolute() {
+            pathdiff::diff_paths(path, &std::fs::canonicalize(&self.asset_path).unwrap())
+        } else {
+            pathdiff::diff_paths(path, &self.asset_path)
+        };
+        diff.unwrap_or_else(|| {
+            panic!(
+                "Could not resolve relation of {:?} to path {:?}",
+                path, self.asset_path
+            );
+        })
     }
 }

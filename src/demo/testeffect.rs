@@ -1,4 +1,5 @@
 use crate::engine::{model::Vertex, object::Object, transform::Transform, *};
+use std::path::Path;
 
 pub struct TestEffect {
     pipeline: wgpu::RenderPipeline,
@@ -48,14 +49,20 @@ impl TestEffect {
         let instances = storagebuffer::StorageVecObject::new(device, 20);
         let light = storagebuffer::StorageObject::default(device);
 
-        let model = model::Model::load_obj_buf(engine, include_bytes!("assets/cube.obj"))
-            .expect("Could not load model");
+        let model =
+            model::Model::load_obj_buf(engine, &engine.load_asset(&Path::new("assets/cube.obj")))?;
 
         let depth_buffer = textures::depth_buffer(engine);
 
-        let vertex_shader = shaders::build(device, &engine.load_asset("shaders/shader.vert"))?;
-        let fragment_shader = shaders::build(device, &engine.load_asset("shaders/shader.frag"))?;
-        let script = scripts::build(&engine.load_asset("assets/camerajump.boe"))?;
+        let vertex_shader = shaders::build(
+            device,
+            &engine.load_asset(&Path::new("shaders/shader.vert")),
+        )?;
+        let fragment_shader = shaders::build(
+            device,
+            &engine.load_asset(&Path::new("shaders/shader.frag")),
+        )?;
+        let script = scripts::build(&engine.load_asset(&Path::new("assets/camerajump.boe")))?;
 
         let layout = device.create_pipeline_layout(&pipeline::layout(&vec![
             view.get_layout(),

@@ -80,15 +80,26 @@ pub struct Mesh {
 }
 
 impl Model {
-    pub fn load_obj_buf(engine: &engine::Engine, obj_data: &[u8]) -> Result<Self, failure::Error> {
+    pub fn load_obj_buf(
+        engine: &engine::Engine,
+        obj_asset: &assets::Asset,
+    ) -> Result<Self, EngineError> {
+        let obj_data = obj_asset.data()?;
         let mut reader = std::io::Cursor::new(obj_data);
+        let obj_home_dir = engine.get_dir_of_asset(obj_asset);
 
         let (obj_models, obj_materials) = {
             tobj::load_obj_buf(&mut reader, true, |path| {
-                match engine.load_asset_from_path(path).data() {
+                match engine.load_asset(&obj_home_dir.join(path)).data() {
                     Ok(data) => tobj::load_mtl_buf(&mut std::io::Cursor::new(data)),
-                    _ => Err(tobj::LoadError::OpenFileFailed),
+                    Err(_) => Err(tobj::LoadError::OpenFileFailed),
                 }
+            })
+            .or_else(|err| {
+                Err(EngineError::AssetLoadError {
+                    path: obj_asset.path().clone(),
+                    message: err.to_string(),
+                })
             })?
         };
 
@@ -97,12 +108,16 @@ impl Model {
             for mat in obj_materials {
                 let diffuse_path = mat.diffuse_texture;
                 let diffuse_texture = if diffuse_path.is_empty() {
+                    println!("Diffuse path is empty");
                     None
                 } else {
-                    let asset = engine.load_asset(&diffuse_path);
+                    let asset = engine.load_asset(&obj_home_dir.join(diffuse_path));
                     match textures::diffuse(engine, &asset) {
                         Ok(texture) => Some(texture),
-                        Err(_) => None,
+                        Err(error) => {
+                            println!("Texture loading failed: {:?}", error);
+                            None
+                        }
                     }
                 };
 

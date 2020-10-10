@@ -1,5 +1,5 @@
 use crate::engine::*;
-use std::{rc::Rc, sync::Mutex};
+use std::{path::Path, rc::Rc, sync::Mutex};
 use winit::{event::*, window::Window};
 
 pub struct Engine {
@@ -21,7 +21,7 @@ pub struct Engine {
 
 #[allow(dead_code)]
 impl Engine {
-    pub async fn new(window: &Window, assets_path: &str) -> Self {
+    pub async fn new(window: &Window, assets_path: &Path) -> Self {
         let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
         let (size, surface) = unsafe {
             let size = window.inner_size();
@@ -93,12 +93,12 @@ impl Engine {
             .push(command_buffer);
     }
 
-    pub fn load_asset(&self, filename: &str) -> Rc<assets::Asset> {
-        self.asset_library.lock().unwrap().file(filename)
+    pub fn load_asset(&self, path: &Path) -> Rc<assets::Asset> {
+        self.asset_library.lock().unwrap().load(path)
     }
 
-    pub fn load_asset_from_path(&self, path: &std::path::Path) -> Rc<assets::Asset> {
-        self.asset_library.lock().unwrap().path(path)
+    pub fn get_dir_of_asset(&self, asset: &assets::Asset) -> PathBuf {
+        self.asset_library.lock().unwrap().asset_dir(asset)
     }
 
     pub fn input(&mut self, event: &WindowEvent) -> bool {
