@@ -16,29 +16,14 @@ pub enum AssetType {
 
 #[derive(Debug, Clone)]
 pub enum Asset {
-    Pending {
-        name: String,
-        path: Option<PathBuf>,
-    },
-    Ready {
-        name: String,
-        path: Option<PathBuf>,
-        data: Vec<u8>,
-    },
-    Error {
-        name: String,
-        message: String,
-    },
+    Pending { path: PathBuf },
+    Ready { path: PathBuf, data: Vec<u8> },
+    Error { path: PathBuf, message: String },
 }
 
 impl Asset {
     pub fn get_type(&self) -> AssetType {
-        let name = match self {
-            Self::Pending { name, .. } | Self::Ready { name, .. } | Self::Error { name, .. } => {
-                name
-            }
-        };
-        match Path::new(name).extension() {
+        match self.path().extension() {
             Some(ext) => match ext.to_string_lossy().to_lowercase().as_str() {
                 "vert" => AssetType::GlslVertexShader,
                 "frag" => AssetType::GlslFragmentShader,
@@ -50,14 +35,17 @@ impl Asset {
         }
     }
 
+    pub fn path(&self) -> &PathBuf {
+        match self {
+            Self::Pending { path, .. } | Self::Ready { path, .. } | Self::Error { path, .. } => {
+                path
+            }
+        }
+    }
+
     pub fn pending(&self) -> Self {
-        if let Self::Ready {
-            name,
-            path,
-            data: _,
-        } = self.to_owned()
-        {
-            Self::Pending { name, path }
+        if let Self::Ready { path, data: _ } = self.to_owned() {
+            Self::Pending { path }
         } else {
             self.clone()
         }
@@ -69,18 +57,10 @@ impl Asset {
             _ => Err("Asset data is not available".into()),
         }
     }
-
-    pub fn new_error(name: &str, error: &str) -> Self {
-        Self::Error {
-            name: String::from(name),
-            message: String::from(error),
-        }
-    }
 }
 
 impl From<PathBuf> for Asset {
     fn from(path: PathBuf) -> Self {
-        let name = String::from(path.file_name().unwrap().to_string_lossy());
         let data = fs::read(&path).or_else(|err| {
             Err(format!(
                 "Loading asset `{}` failed: {:?}",
@@ -89,12 +69,8 @@ impl From<PathBuf> for Asset {
             ))
         });
         match data {
-            Ok(data) => Asset::Ready {
-                name,
-                path: Some(path),
-                data,
-            },
-            Err(message) => Asset::Error { name, message },
+            Ok(data) => Asset::Ready { path, data },
+            Err(message) => Asset::Error { path, message },
         }
     }
 }
@@ -133,10 +109,10 @@ impl AssetLibrary {
                 self.assets.insert(path, asset.clone());
                 asset.clone()
             }
-            Err(error) => Rc::new(Asset::new_error(
-                &path.to_string_lossy(),
-                &error.to_string(),
-            )),
+            Err(error) => Rc::new(Asset::Error {
+                path: path.to_path_buf(),
+                message: error.to_string(),
+            }),
         }
     }
 

@@ -7,10 +7,15 @@ pub fn build(device: &wgpu::Device, asset: &Asset) -> Result<wgpu::ShaderModule,
         e => return Err(format!("Unsupported asset type: {:?}", e)),
     };
     match asset {
-        Asset::Ready { name, data, .. } => {
+        Asset::Ready { path, data, .. } => {
             let glsl = std::str::from_utf8(data)
                 .or_else(|err| Err(format!("UTF-8 error at {}", err.valid_up_to())))?;
-            compile_into_spirv(device, glsl, name, kind)
+            compile_into_spirv(
+                device,
+                glsl,
+                &path.file_name().unwrap().to_string_lossy(),
+                kind,
+            )
         }
         _ => Err("Asset is not ready".into()),
     }
