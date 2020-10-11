@@ -1,10 +1,83 @@
 #[allow(dead_code)]
-use crate::engine::textures;
+use crate::engine::{engine, textures};
+
+#[derive(TypedBuilder)]
+pub struct PipelineDescriptor<'a> {
+    vertex_shader: &'a wgpu::ShaderModule,
+
+    #[builder(default, setter(strip_option))]
+    fragment_shader: Option<&'a wgpu::ShaderModule>,
+    #[builder(default)]
+    cull_mode: wgpu::CullMode,
+    #[builder(default, setter(strip_option))]
+    primitive_topology: Option<wgpu::PrimitiveTopology>,
+    #[builder(default)]
+    color_format: Option<wgpu::TextureFormat>,
+    #[builder(default)]
+    blend_mode: BlendMode,
+    #[builder(default, setter(strip_option))]
+    depth_stencil_state: Option<wgpu::DepthStencilStateDescriptor>,
+    #[builder(default)]
+    vertex_buffers: &'a [wgpu::VertexBufferDescriptor<'a>],
+    #[builder(default = 1)]
+    sample_count: u32,
+    #[builder(default = 0xffffffff)]
+    sample_mask: u32,
+    #[builder(default)]
+    enable_alpha_to_coverage: bool,
+    #[builder(default)]
+    enable_depth_buffer: bool,
+    #[builder(default)]
+    bind_group_layouts: &'a [&'a wgpu::BindGroupLayout],
+}
+
+pub fn build_pipeline<'a>(
+    engine: &engine::Engine,
+    descriptor: PipelineDescriptor<'a>,
+) -> wgpu::RenderPipeline {
+    let pipeline_layout = engine
+        .device
+        .create_pipeline_layout(&layout(descriptor.bind_group_layouts));
+
+    engine
+        .device
+        .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: None,
+            layout: Some(&pipeline_layout),
+            vertex_stage: shader_stage(&descriptor.vertex_shader),
+            fragment_stage: match descriptor.fragment_shader {
+                Some(ref shader) => Some(shader_stage(shader)),
+                None => None,
+            },
+            rasterization_state: rasterization_state(descriptor.cull_mode),
+            primitive_topology: descriptor
+                .primitive_topology
+                .unwrap_or(wgpu::PrimitiveTopology::TriangleList),
+            color_states: &color_state(
+                descriptor
+                    .color_format
+                    .unwrap_or(engine.swap_chain_descriptor.format),
+                descriptor.blend_mode,
+            ),
+            depth_stencil_state: if descriptor.enable_depth_buffer {
+                depth_stencil_state()
+            } else {
+                None
+            },
+            vertex_state: wgpu::VertexStateDescriptor {
+                index_format: wgpu::IndexFormat::Uint32,
+                vertex_buffers: &descriptor.vertex_buffers,
+            },
+            sample_count: descriptor.sample_count,
+            sample_mask: descriptor.sample_mask,
+            alpha_to_coverage_enabled: descriptor.enable_alpha_to_coverage,
+        })
+}
 
 // Default descriptors for pipeline creation
 
 pub fn layout<'a>(
-    bind_group_layouts: &'a Vec<&'a wgpu::BindGroupLayout>,
+    bind_group_layouts: &'a [&'a wgpu::BindGroupLayout],
 ) -> wgpu::PipelineLayoutDescriptor<'a> {
     wgpu::PipelineLayoutDescriptor {
         label: Some("Default pipeline layout"),

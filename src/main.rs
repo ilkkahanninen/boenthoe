@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate typed_builder;
+
 mod demo;
 mod engine;
 

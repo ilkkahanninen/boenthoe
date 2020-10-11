@@ -64,37 +64,26 @@ impl TestEffect {
         )?;
         let script = scripts::build(&engine.load_asset(&Path::new("assets/camerajump.boe")))?;
 
-        let layout = device.create_pipeline_layout(&pipeline::layout(&vec![
-            view.get_layout(),
-            model.materials[0]
-                .diffuse_texture
-                .as_ref()
-                .unwrap()
-                .get_layout(),
-            instances.get_layout(),
-            light.get_layout(),
-        ]));
-
-        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: None,
-            layout: Some(&layout),
-            vertex_stage: pipeline::shader_stage(&vertex_shader),
-            fragment_stage: Some(pipeline::shader_stage(&fragment_shader)),
-            rasterization_state: pipeline::rasterization_state(wgpu::CullMode::Back),
-            color_states: &pipeline::color_state(
-                engine.swap_chain_descriptor.format,
-                pipeline::BlendMode::default(),
-            ),
-            depth_stencil_state: pipeline::depth_stencil_state(),
-            vertex_state: wgpu::VertexStateDescriptor {
-                index_format: wgpu::IndexFormat::Uint32,
-                vertex_buffers: &[model::ModelVertex::desc()],
-            },
-            primitive_topology: wgpu::PrimitiveTopology::TriangleList,
-            sample_count: 1,
-            sample_mask: !0,
-            alpha_to_coverage_enabled: false,
-        });
+        let pipeline = pipeline::build_pipeline(
+            &engine,
+            pipeline::PipelineDescriptor::builder()
+                .vertex_shader(&vertex_shader)
+                .vertex_buffers(&[model::ModelVertex::desc()])
+                .fragment_shader(&fragment_shader)
+                .cull_mode(wgpu::CullMode::Back)
+                .enable_depth_buffer(true)
+                .bind_group_layouts(&[
+                    view.get_layout(),
+                    model.materials[0]
+                        .diffuse_texture
+                        .as_ref()
+                        .unwrap()
+                        .get_layout(),
+                    instances.get_layout(),
+                    light.get_layout(),
+                ])
+                .build(),
+        );
 
         engine.add_renderer(Box::new(Self {
             pipeline,
