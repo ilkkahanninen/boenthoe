@@ -73,6 +73,17 @@ impl Asset {
         }
     }
 
+    pub fn to_utf8(&self) -> Result<&str, EngineError> {
+        let data = self.data()?;
+        let utf8 = std::str::from_utf8(data).or_else(|err| {
+            Err(EngineError::AssetParseError {
+                path: self.path().clone(),
+                message: format!("UTF-8 error at {}", err.valid_up_to()),
+            })
+        })?;
+        Ok(utf8)
+    }
+
     pub fn to_pending(&self) -> Self {
         if let Self::Ready { path, data: _ } = self.to_owned() {
             Self::Pending { path }
