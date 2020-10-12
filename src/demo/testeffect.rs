@@ -1,9 +1,9 @@
-use crate::engine::{model::Vertex, object::Object, transform::Transform, *};
+use crate::engine::{object::Object, transform::Transform, *};
 use std::path::Path;
 
 pub struct TestEffect {
     pipeline: wgpu::RenderPipeline,
-    model: model::Model,
+    // model: model::Model,
     depth_buffer: textures::Texture,
     view: view::ViewObject,
     instances: storagebuffer::StorageVecObject<InstanceModel>,
@@ -49,8 +49,8 @@ impl TestEffect {
         let instances = storagebuffer::StorageVecObject::new(device, 20);
         let light = storagebuffer::StorageObject::default(device);
 
-        let model =
-            model::Model::load_obj_buf(engine, &engine.load_asset(&Path::new("assets/cube.obj")))?;
+        // let model =
+        //     model::Model::load_obj_buf(engine, &engine.load_asset(&Path::new("assets/cube.obj")))?;
 
         let depth_buffer = textures::depth_buffer(engine);
 
@@ -68,17 +68,17 @@ impl TestEffect {
             &engine,
             pipeline::PipelineDescriptor::builder()
                 .vertex_shader(&vertex_shader)
-                .vertex_buffers(&[model::ModelVertex::desc()])
+                // .vertex_buffers(&[model::ModelVertex::desc()])
                 .fragment_shader(&fragment_shader)
                 .cull_mode(wgpu::CullMode::Back)
                 .enable_depth_buffer(true)
                 .bind_group_layouts(&[
                     view.get_layout(),
-                    model.materials[0]
-                        .diffuse_texture
-                        .as_ref()
-                        .unwrap()
-                        .get_layout(),
+                    // model.materials[0]
+                    //     .diffuse_texture
+                    //     .as_ref()
+                    //     .unwrap()
+                    //     .get_layout(),
                     instances.get_layout(),
                     light.get_layout(),
                 ])
@@ -87,7 +87,7 @@ impl TestEffect {
 
         engine.add_renderer(Box::new(Self {
             pipeline,
-            model,
+            // model,
             view,
             instances,
             depth_buffer,
@@ -166,17 +166,17 @@ impl renderer::Renderer for TestEffect {
             }),
         });
 
-        let mesh = &self.model.meshes[0];
-        let material = &self.model.materials[0];
-        let diffuse_texture = material.diffuse_texture.as_ref().unwrap();
+        // let mesh = &self.model.meshes[0];
+        // let material = &self.model.materials[0];
+        // let diffuse_texture = material.diffuse_texture.as_ref().unwrap();
 
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, self.view.get_bind_group(), &[]);
-        render_pass.set_bind_group(1, &diffuse_texture.bind_group, &[]);
+        // render_pass.set_bind_group(1, &diffuse_texture.bind_group, &[]);
         render_pass.set_bind_group(2, self.instances.get_bind_group(), &[]);
         render_pass.set_bind_group(3, self.light.get_bind_group(), &[]);
-        render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-        render_pass.set_index_buffer(mesh.index_buffer.slice(..));
-        render_pass.draw_indexed(0..mesh.num_elements, 0, self.instances.all());
+        // render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+        // render_pass.set_index_buffer(mesh.index_buffer.slice(..));
+        // render_pass.draw_indexed(0..mesh.num_elements, 0, self.instances.all());
     }
 }

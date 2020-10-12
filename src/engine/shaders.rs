@@ -5,10 +5,10 @@ pub fn build(device: &wgpu::Device, asset: &Asset) -> Result<wgpu::ShaderModule,
         AssetType::GlslVertexShader => shaderc::ShaderKind::Vertex,
         AssetType::GlslFragmentShader => shaderc::ShaderKind::Fragment,
         _ => {
-            return Err(EngineError::UnsupportedAssetType {
-                path: asset.path().clone(),
-                expected: "Vertex or fragment shader (GLSL)".into(),
-            })
+            return Err(EngineError::unsupported_asset_format(
+                asset,
+                "Vertex or fragment shader (GLSL)",
+            ))
         }
     };
 

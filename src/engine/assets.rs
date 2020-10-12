@@ -13,6 +13,7 @@ pub enum AssetType {
     BoenthoeScript,
     PngImage,
     JpegImage,
+    GltfModel,
     Unknown,
 }
 
@@ -46,6 +47,7 @@ impl Asset {
                 "boe" => AssetType::BoenthoeScript,
                 "png" => AssetType::PngImage,
                 "jpg" => AssetType::JpegImage,
+                "gltf" => AssetType::GltfModel,
                 _ => AssetType::Unknown,
             },
             None => AssetType::Unknown,

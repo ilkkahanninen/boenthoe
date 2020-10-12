@@ -13,10 +13,7 @@ pub fn build(asset: &Asset) -> Result<Script, EngineError> {
             })
             .and_then(|functions| Ok(Script::new(functions)))
     } else {
-        Err(EngineError::UnsupportedAssetType {
-            path: asset.path().clone(),
-            expected: ".boe".into(),
-        })
+        Err(EngineError::unsupported_asset_format(asset, ".boe"))
     }
 }
 

@@ -139,12 +139,7 @@ fn get_image_format(asset: &assets::Asset) -> Result<image::ImageFormat, EngineE
     match asset.get_type() {
         assets::AssetType::PngImage => Ok(image::ImageFormat::Png),
         assets::AssetType::JpegImage => Ok(image::ImageFormat::Jpeg),
-        _ => {
-            return Err(EngineError::UnsupportedAssetType {
-                path: asset.path().clone(),
-                expected: "JPEG or PNG".into(),
-            })
-        }
+        _ => return Err(EngineError::unsupported_asset_format(asset, "JPEG or PNG")),
     }
 }
 
