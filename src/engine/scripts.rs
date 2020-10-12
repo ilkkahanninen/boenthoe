@@ -4,15 +4,7 @@ use std::collections::HashMap;
 
 pub fn build(asset: &Asset) -> Result<Script, EngineError> {
     if let AssetType::BoenthoeScript = asset.get_type() {
-        let data = asset.data()?;
-        let source = std::str::from_utf8(data).or_else(|err| {
-            Err(EngineError::AssetParseError {
-                path: asset.path().clone(),
-                message: format!("UTF-8 error at {}", err.valid_up_to()),
-            })
-        })?;
-
-        boenthoescript::build(source)
+        boenthoescript::build(asset.to_utf8()?)
             .or_else(|err| {
                 Err(EngineError::AssetParseError {
                     path: asset.path().clone(),

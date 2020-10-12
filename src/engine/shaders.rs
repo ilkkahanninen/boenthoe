@@ -12,15 +12,8 @@ pub fn build(device: &wgpu::Device, asset: &Asset) -> Result<wgpu::ShaderModule,
         }
     };
 
-    let data = asset.data()?;
     let path = asset.path();
-
-    let glsl = std::str::from_utf8(data).or_else(|err| {
-        Err(EngineError::AssetParseError {
-            path: path.clone(),
-            message: format!("UTF-8 error at {}", err.valid_up_to()),
-        })
-    })?;
+    let glsl = asset.to_utf8()?;
 
     compile_into_spirv(
         device,
