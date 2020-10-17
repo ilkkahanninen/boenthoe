@@ -10,10 +10,24 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn build_view_projection_matrix(&self) -> cgmath::Matrix4<f32> {
+    pub fn view_projection_matrix(&self) -> cgmath::Matrix4<f32> {
         let view = cgmath::Matrix4::look_at(self.eye, self.target, self.up);
         let proj = cgmath::perspective(cgmath::Deg(self.fovy), self.aspect, self.znear, self.zfar);
         OPENGL_TO_WGPU_MATRIX * proj * view
+    }
+}
+
+impl Default for Camera {
+    fn default() -> Self {
+        Self {
+            eye: (0.0, 0.0, -10.0).into(),
+            target: (0.0, 0.0, 0.0).into(),
+            up: cgmath::Vector3::unit_y(),
+            aspect: 16.0 / 9.0,
+            fovy: 45.0,
+            znear: 0.1,
+            zfar: 100.0,
+        }
     }
 }
 

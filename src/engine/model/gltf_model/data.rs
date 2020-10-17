@@ -14,7 +14,7 @@ impl<'a> InitData<'a> {
         let vertex_shader = shaders::build(
             device,
             &Asset::Ready {
-                path: "glTf default vertex shader".into(),
+                path: "engine/model/gltf_model/shaders/gltf.vert".into(),
                 data: include_bytes!("shaders/gltf.vert").to_vec(),
             },
         )?;
@@ -22,7 +22,7 @@ impl<'a> InitData<'a> {
         let fragment_shader = shaders::build(
             device,
             &Asset::Ready {
-                path: "glTf default fragment shader".into(),
+                path: "engine/model/gltf_model/shaders/gltf.frag".into(),
                 data: include_bytes!("shaders/gltf.frag").to_vec(),
             },
         )?;

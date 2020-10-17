@@ -1,6 +1,6 @@
 mod gltf_model;
 
-use crate::engine::{Asset, AssetType, Engine, EngineError};
+use crate::engine::prelude::*;
 use gltf_model::GltfModel;
 
 pub fn load(engine: &Engine, asset: &Asset) -> Result<Box<dyn Model>, EngineError> {
@@ -12,12 +12,14 @@ pub fn load(engine: &Engine, asset: &Asset) -> Result<Box<dyn Model>, EngineErro
 
 pub trait Model {
     fn render(&self, context: &mut ModelRenderContext);
+    fn set_view_projection_matrix(&mut self, matrix: &Matrix4);
 }
 
 pub struct ModelRenderContext<'a> {
-    device: &'a wgpu::Device,
-    output: &'a wgpu::TextureView,
-    encoder: wgpu::CommandEncoder,
+    pub device: &'a wgpu::Device,
+    pub output: &'a wgpu::TextureView,
+    pub encoder: &'a mut wgpu::CommandEncoder,
+    pub depth_buffer: &'a Texture,
 }
 
 impl ModelRenderContext<'_> {
@@ -31,7 +33,14 @@ impl ModelRenderContext<'_> {
                     store: true,
                 },
             }],
-            depth_stencil_attachment: None,
+            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
+                attachment: &self.depth_buffer.view,
+                depth_ops: Some(wgpu::Operations {
+                    load: wgpu::LoadOp::Load,
+                    store: true,
+                }),
+                stencil_ops: None,
+            }),
         })
     }
 }

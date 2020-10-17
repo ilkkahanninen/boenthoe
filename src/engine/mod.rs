@@ -18,9 +18,6 @@ pub mod transform;
 pub mod view;
 pub mod window;
 
-pub use assets::{Asset, AssetType};
-pub use engine::Engine;
-
 #[derive(Debug)]
 pub enum EngineError {
     UnsupportedAssetFormat { path: PathBuf, expected: String },
@@ -46,4 +43,16 @@ impl EngineError {
             expected: String::from(expected),
         }
     }
+}
+
+pub mod prelude {
+    pub type Matrix4 = cgmath::Matrix4<f32>;
+
+    pub use super::assets::{Asset, AssetLibrary, AssetType};
+    pub use super::camera::Camera;
+    pub use super::engine::Engine;
+    pub use super::renderer::{Renderer, RenderingContext};
+    pub use super::textures;
+    pub use super::textures::Texture;
+    pub use super::EngineError;
 }

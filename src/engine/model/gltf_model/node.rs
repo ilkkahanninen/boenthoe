@@ -1,5 +1,5 @@
-use super::{data::InitData, primitive::Primitive, Matrix4, ModelRenderContext};
-use crate::engine::Engine;
+use super::{data::InitData, primitive::Primitive, Matrix4, ModelRenderContext, TransformMatrices};
+use crate::engine::prelude::*;
 
 pub struct Node {
     transform: Matrix4,
@@ -26,13 +26,17 @@ impl Node {
         }
     }
 
-    pub fn render(&self, context: &mut ModelRenderContext, transform: &Matrix4) {
-        let global_transform = transform * self.transform;
+    pub fn render(&self, context: &mut ModelRenderContext, transforms: &TransformMatrices) {
+        let space_matrix = transforms.space * self.transform;
+        let transforms = TransformMatrices {
+            view_projection: transforms.view_projection,
+            space: &space_matrix,
+        };
         for primitive in self.primitives.iter() {
-            primitive.render(context, &global_transform);
+            primitive.render(context, &transforms);
         }
         for child in self.children.iter() {
-            child.render(context, &global_transform);
+            child.render(context, &transforms);
         }
     }
 }
