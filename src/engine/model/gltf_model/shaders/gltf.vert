@@ -1,37 +1,36 @@
 #version 450
 
-// Inputs from vertex buffer
+// Vertex buffer inputs
+
 layout(location=0) in vec3 a_position;
-layout(location=1) in vec2 a_tex_coords;
-layout(location=2) in vec3 a_normal;
+layout(location=1) in vec3 a_normal;
+layout(location=2) in vec2 a_tex_coords;
+layout(location=3) in vec4 a_color;
 
-// Bindings
+// Bind group, index 0: Uniforms
+
 layout(set=0, binding=0) uniform Uniforms {
-    vec3 u_view_position;
     mat4 u_view_proj;
+    mat4 u_space;
 };
-// set=1 would be material
-layout(set=2, binding=0) buffer Instances {
-    mat4 s_models[];
-};
-// set=3 would be light
 
-// Outputs
-layout(location=0) out vec2 v_tex_coords;
-layout(location=1) out vec3 v_normal;
-layout(location=2) out vec3 v_position;
-layout(location=3) out vec3 v_e;
+// Outputs to fragment shader
+
+layout(location=0) out vec3 out_normal;
+layout(location=1) out vec2 out_tex_coords;
+layout(location=2) out vec4 out_color;
 
 void main() {
-    v_tex_coords = a_tex_coords;
+    // Position
+    vec4 model_space = u_space * vec4(a_position, 1.0);
+    gl_Position = u_view_proj * model_space;
 
-    mat4 model_matrix = s_models[gl_InstanceIndex];
-    mat3 normal_matrix = mat3(transpose(inverse(model_matrix)));
-    v_normal = normalize(normal_matrix * a_normal);
+    // Texture coordinates
+    out_tex_coords = a_tex_coords;
 
-    vec4 model_space = model_matrix * vec4(a_position, 1.0);
-    v_position = model_space.xyz;
-    gl_Position = u_view_proj  * model_space;
+    // Normal
+    out_normal = a_normal;
 
-    v_e = normalize(v_position);
+    // Color
+    out_color = a_color;
 }

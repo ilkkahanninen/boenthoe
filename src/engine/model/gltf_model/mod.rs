@@ -3,22 +3,33 @@ mod node;
 mod primitive;
 
 use super::{Model, ModelRenderContext};
-use crate::engine::{shaders, Asset, Engine, EngineError};
+use crate::engine::{camera::Camera, prelude::*, shaders};
 use node::Node;
 use std::path::Path;
 
-pub type Matrix4 = cgmath::Matrix4<f32>;
-
 pub struct GltfModel {
+    view_projection_matrix: Matrix4,
     nodes: Vec<Node>,
+}
+
+pub struct TransformMatrices<'a> {
+    view_projection: &'a Matrix4,
+    space: &'a Matrix4,
 }
 
 impl Model for GltfModel {
     fn render(&self, context: &mut ModelRenderContext) {
-        let transform = cgmath::SquareMatrix::identity();
+        let transforms = TransformMatrices {
+            view_projection: &self.view_projection_matrix,
+            space: &cgmath::SquareMatrix::identity(),
+        };
         for node in self.nodes.iter() {
-            node.render(context, &transform);
+            node.render(context, &transforms);
         }
+    }
+
+    fn set_view_projection_matrix(&mut self, matrix: &Matrix4) {
+        self.view_projection_matrix = matrix.clone();
     }
 }
 
@@ -35,6 +46,7 @@ impl GltfModel {
             .ok_or_else(|| EngineError::parse_error(source, "The file does not have any scenes"))?;
 
         Ok(GltfModel {
+            view_projection_matrix: Camera::default().view_projection_matrix(),
             nodes: scene
                 .nodes()
                 .map(|node| Node::new(engine, &node, &data))

@@ -35,7 +35,7 @@ impl From<&ViewModel> for ViewUniform {
     fn from(model: &ViewModel) -> Self {
         Self {
             view_position: model.camera.eye.to_homogeneous(),
-            view_proj: model.camera.build_view_projection_matrix(),
+            view_proj: model.camera.view_projection_matrix(),
         }
     }
 }

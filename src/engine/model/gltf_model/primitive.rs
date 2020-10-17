@@ -1,6 +1,6 @@
-use super::{data::InitData, Matrix4, ModelRenderContext};
+use super::{data::InitData, Matrix4, ModelRenderContext, TransformMatrices};
 use crate::engine::object::Object;
-use crate::engine::{pipeline, storagebuffer::StorageObject, Engine};
+use crate::engine::{pipeline, prelude::*, storagebuffer::StorageObject};
 use gltf::mesh::Mode;
 use wgpu::util::DeviceExt;
 use wgpu::PrimitiveTopology;
@@ -8,7 +8,9 @@ use wgpu::PrimitiveTopology;
 pub struct Primitive {
     pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
+    index_buffer: wgpu::Buffer,
     uniforms_storage: StorageObject<Uniforms>,
+    num_elements: u32,
 }
 
 impl Primitive {
@@ -23,6 +25,17 @@ impl Primitive {
                 usage: wgpu::BufferUsage::VERTEX,
             });
         let vertex_buffer_descriptors = [Vertex::buffer_descriptor()];
+
+        // Indices
+        let reader = primitive.reader(|buffer| Some(&data.buffers[buffer.index()]));
+        let indices: Vec<u32> = reader.read_indices().unwrap().into_u32().collect();
+        let index_buffer = engine
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: None,
+                contents: bytemuck::cast_slice(&indices),
+                usage: wgpu::BufferUsage::INDEX,
+            });
 
         // Uniforms
         let uniforms_storage = StorageObject::default(&engine.device);
@@ -49,24 +62,24 @@ impl Primitive {
         Self {
             pipeline: pipeline::build_pipeline(engine, pipeline_descriptor),
             vertex_buffer,
+            index_buffer,
             uniforms_storage,
+            num_elements: indices.len() as u32,
         }
     }
 
-    pub fn render(&self, context: &mut ModelRenderContext, transform: &Matrix4) {
+    pub fn render(&self, context: &mut ModelRenderContext, transform: &TransformMatrices) {
         // Update uniforms buffer
-        let uniforms = Uniforms {
-            transform: transform.clone(),
-        };
         self.uniforms_storage
-            .copy_to_gpu(context.device, &mut context.encoder, &uniforms);
+            .copy_to_gpu(context.device, &mut context.encoder, &transform.into());
 
         // Render
         let mut render_pass = context.begin_draw();
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, self.uniforms_storage.get_bind_group(), &[]);
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-        render_pass.draw(0..0, 0..0);
+        render_pass.set_index_buffer(self.index_buffer.slice(..));
+        render_pass.draw_indexed(0..self.num_elements, 0, 0..1);
     }
 }
 
@@ -168,13 +181,24 @@ impl Vertex {
 
 #[derive(Debug, Copy, Clone)]
 struct Uniforms {
-    transform: Matrix4,
+    view_projection_matrix: Matrix4,
+    space_matrix: Matrix4,
 }
 
 impl Default for Uniforms {
     fn default() -> Self {
         Self {
-            transform: cgmath::SquareMatrix::identity(),
+            view_projection_matrix: cgmath::SquareMatrix::identity(),
+            space_matrix: cgmath::SquareMatrix::identity(),
+        }
+    }
+}
+
+impl From<&TransformMatrices<'_>> for Uniforms {
+    fn from(transform: &TransformMatrices) -> Self {
+        Self {
+            view_projection_matrix: transform.view_projection.clone(),
+            space_matrix: transform.space.clone(),
         }
     }
 }
