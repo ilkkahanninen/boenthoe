@@ -2,10 +2,10 @@ use crate::engine::object::Object;
 use wgpu::util::DeviceExt;
 
 pub struct StorageObject<T> {
-    pub data: T,
     buffer: wgpu::Buffer,
     bind_group_layout: wgpu::BindGroupLayout,
     bind_group: wgpu::BindGroup,
+    phantom: std::marker::PhantomData<T>,
 }
 
 impl<T> StorageObject<T>
@@ -50,15 +50,15 @@ where
         });
 
         Self {
-            data: initial_data,
             buffer,
             bind_group_layout,
             bind_group,
+            phantom: std::marker::PhantomData,
         }
     }
 
-    pub fn copy_to_gpu(&self, device: &wgpu::Device, encoder: &mut wgpu::CommandEncoder) {
-        let staging_buffer = Self::create_buffer(device, &self.data, false);
+    pub fn copy_to_gpu(&self, device: &wgpu::Device, encoder: &mut wgpu::CommandEncoder, data: &T) {
+        let staging_buffer = Self::create_buffer(device, data, false);
         encoder.copy_buffer_to_buffer(
             &staging_buffer,
             0,

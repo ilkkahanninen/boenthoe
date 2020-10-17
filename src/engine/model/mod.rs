@@ -14,12 +14,13 @@ pub trait Model {
     fn render(&self, context: &mut ModelRenderContext);
 }
 
-pub struct ModelRenderContext {
+pub struct ModelRenderContext<'a> {
+    device: &'a wgpu::Device,
+    output: &'a wgpu::TextureView,
     encoder: wgpu::CommandEncoder,
-    output: wgpu::TextureView,
 }
 
-impl ModelRenderContext {
+impl ModelRenderContext<'_> {
     pub fn begin_draw(&mut self) -> wgpu::RenderPass {
         self.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
