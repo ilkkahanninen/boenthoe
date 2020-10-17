@@ -57,9 +57,9 @@ impl ViewObject {
         }
     }
 
-    pub fn copy_to_gpu(&mut self, device: &wgpu::Device, encoder: &mut wgpu::CommandEncoder) {
-        self.storage.data = ViewUniform::from(&self.model);
-        self.storage.copy_to_gpu(device, encoder);
+    pub fn copy_to_gpu(&self, device: &wgpu::Device, encoder: &mut wgpu::CommandEncoder) {
+        let data = ViewUniform::from(&self.model);
+        self.storage.copy_to_gpu(device, encoder, &data);
     }
 }
 

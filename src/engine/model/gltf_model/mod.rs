@@ -24,10 +24,10 @@ impl Model for GltfModel {
 
 impl GltfModel {
     pub fn new(engine: &Engine, source: &Asset) -> Result<Self, EngineError> {
-        let (gltf, buffers, images) = gltf::import_slice(source.data()?)
+        let (gltf, buffers, _images) = gltf::import_slice(source.data()?)
             .or_else(|error| Err(EngineError::parse_error(source, error)))?;
 
-        let initData = data::InitData::load(&engine.device, &buffers)?;
+        let data = data::InitData::load(&engine.device, &buffers)?;
 
         let scene = gltf
             .default_scene()
@@ -37,7 +37,7 @@ impl GltfModel {
         Ok(GltfModel {
             nodes: scene
                 .nodes()
-                .map(|node| Node::new(engine, &node, &initData))
+                .map(|node| Node::new(engine, &node, &data))
                 .collect(),
         })
     }

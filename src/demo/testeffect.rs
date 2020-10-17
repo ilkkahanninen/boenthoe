@@ -122,10 +122,10 @@ impl renderer::Renderer for TestEffect {
             .into();
         self.view.copy_to_gpu(ctx.device, ctx.encoder);
 
-        self.light.data.position.x = (time).sin() * 10.0;
-        self.light.data.position.y = 15.0 + (time * 1.3).sin() * 10.0;
-        self.light.data.position.z = (time * 1.2).cos() * 10.0;
-        self.light.copy_to_gpu(ctx.device, ctx.encoder);
+        // self.light.data.position.x = (time).sin() * 10.0;
+        // self.light.data.position.y = 15.0 + (time * 1.3).sin() * 10.0;
+        // self.light.data.position.z = (time * 1.2).cos() * 10.0;
+        // self.light.copy_to_gpu(ctx.device, ctx.encoder);
 
         for (index, instance) in self.instances.data.iter_mut().enumerate() {
             let a = index as f32 + 1.0;
