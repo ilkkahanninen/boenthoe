@@ -152,7 +152,7 @@ impl Engine {
         let mut encoder = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("Render Encoder"),
+                label: Some("Engine::render encoder"),
             });
 
         let mut renderers = self.renderers.lock().unwrap();

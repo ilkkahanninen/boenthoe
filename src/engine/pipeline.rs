@@ -6,6 +6,8 @@ pub struct PipelineDescriptor<'a> {
     vertex_shader: &'a wgpu::ShaderModule,
 
     #[builder(default, setter(strip_option))]
+    label: Option<&'a str>,
+    #[builder(default, setter(strip_option))]
     fragment_shader: Option<&'a wgpu::ShaderModule>,
     #[builder(default)]
     cull_mode: wgpu::CullMode,
@@ -42,7 +44,7 @@ pub fn build_pipeline<'a>(
     engine
         .device
         .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: None,
+            label: descriptor.label.or(Some("Render pipeline")),
             layout: Some(&pipeline_layout),
             vertex_stage: shader_stage(&descriptor.vertex_shader),
             fragment_stage: match descriptor.fragment_shader {
@@ -80,7 +82,7 @@ pub fn layout<'a>(
     bind_group_layouts: &'a [&'a wgpu::BindGroupLayout],
 ) -> wgpu::PipelineLayoutDescriptor<'a> {
     wgpu::PipelineLayoutDescriptor {
-        label: Some("Default pipeline layout"),
+        label: Some("Pipeline layout"),
         bind_group_layouts: &bind_group_layouts,
         push_constant_ranges: &[],
     }

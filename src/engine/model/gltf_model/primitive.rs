@@ -15,12 +15,14 @@ pub struct Primitive {
 
 impl Primitive {
     pub fn new(engine: &Engine, primitive: &gltf::Primitive, data: &InitData) -> Self {
+        let label = format!("gltf::Primitive[{}]", primitive.index());
+
         // Vertices
         let vertices = Vertex::build_vec(primitive, data.buffers).unwrap();
         let vertex_buffer = engine
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: None,
+                label: Some(&format!("{}::vertex_buffer", &label)),
                 contents: bytemuck::cast_slice(&vertices),
                 usage: wgpu::BufferUsage::VERTEX,
             });
@@ -32,17 +34,19 @@ impl Primitive {
         let index_buffer = engine
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: None,
+                label: Some(&format!("{}::index_buffer", &label)),
                 contents: bytemuck::cast_slice(&indices),
                 usage: wgpu::BufferUsage::INDEX,
             });
 
         // Uniforms
-        let uniforms_storage = StorageObject::default(&engine.device);
+        let uniforms_storage = StorageObject::default(&engine.device, "gltf::Uniforms");
         let bind_group_layouts = [uniforms_storage.get_layout()];
 
         // Render pipeline
+        let label = format!("{}::pipeline", &label);
         let pipeline_descriptor = pipeline::PipelineDescriptor::builder()
+            .label(&label)
             .vertex_shader(&data.vertex_shader)
             .fragment_shader(&data.fragment_shader)
             .vertex_buffers(&vertex_buffer_descriptors)
