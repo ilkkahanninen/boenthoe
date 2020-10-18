@@ -53,7 +53,7 @@ impl ViewObject {
     pub fn init(device: &wgpu::Device, model: ViewModel) -> Self {
         Self {
             model,
-            storage: StorageObject::init(device, ViewUniform::from(&model)),
+            storage: StorageObject::init(device, ViewUniform::from(&model), "View"),
         }
     }
 
