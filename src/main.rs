@@ -4,17 +4,15 @@ extern crate typed_builder;
 mod demo;
 mod engine;
 
-use clap::Clap;
-
-#[derive(Clap)]
-#[clap(version = "0.2.0", author = "Ilkka Hänninen")]
-struct Opts {
-    #[clap(short, long)]
+struct Args {
     window: bool,
 }
 
 fn main() {
-    let opts = Opts::parse();
+    let mut args = pico_args::Arguments::from_env();
+    let args = Args {
+        window: args.contains(["-w", "--window"]),
+    };
 
     let mut window = engine::window::Window::new(&engine::window::WindowProperties {
         title: "Boenthoe 0.2.0",
@@ -22,7 +20,7 @@ fn main() {
             width: 1920,
             height: 1080,
         },
-        fullscreen: !opts.window,
+        fullscreen: !args.window,
     });
 
     match demo::init(&mut window.window) {

@@ -7,19 +7,30 @@ edition = "2018"
 [dependencies]
 boenthoescript = { path = "boenthoescript" }
 bytemuck = "1.4.1"
-cgmath = "0.17"
-clap = "3.0.0-beta.1"
 cpal = "0.12.1"
 futures = "0.3.4"
 gltf = "0.15.2"
-image = "0.23.9"
 minimp3 = "0.4"
 notify = "4.0.15"
 pathdiff = "0.1.0"
+pico-args = "0.3.4"
 shaderc = "0.6"
 typed-builder = "0.7.0"
 wgpu = "0.6.0"
 winit = "0.20"
 
+[dependencies.cgmath]
+version = "0.17"
+default-features = false
+features = []
+
+[dependencies.image]
+version = "0.23.9"
+default-features = false
+features = ["jpeg", "png"]
+
 [profile.dev.package."*"]
 opt-level = 2
+
+[profile.dev]
+debug = false

@@ -15,6 +15,7 @@ layout(set=1, binding=0) uniform Lights {
     vec3 u_light_pos;
 };
 
+
 // Inputs from vertex shader
 
 layout(location=0) in vec3 a_position;
