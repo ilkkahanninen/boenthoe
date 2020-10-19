@@ -12,6 +12,7 @@ layout(location=3) in vec4 a_color;
 layout(set=0, binding=0) uniform Uniforms {
     mat4 u_view_proj_matrix;
     mat4 u_model_matrix;
+    vec3 u_eye_position;
 };
 
 // Outputs to fragment shader

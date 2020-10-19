@@ -46,8 +46,9 @@ impl Renderer for TestEffect {
             self.script.get("eye_z").to_f() as f32,
         )
             .into();
-        self.model
-            .set_view_projection_matrix(&self.camera.view_projection_matrix());
+
+        self.model.set_camera(&self.camera);
+
         self.model.set_lighting(&[Light {
             color: (1.0, 0.9, 0.8, 1.0).into(),
             position: (5.0, 10.0, -15.0).into(),

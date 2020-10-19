@@ -47,6 +47,7 @@ impl EngineError {
 }
 
 pub mod prelude {
+    pub type Point3 = cgmath::Point3<f32>;
     pub type Matrix3 = cgmath::Matrix3<f32>;
     pub type Matrix4 = cgmath::Matrix4<f32>;
 

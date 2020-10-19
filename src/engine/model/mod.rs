@@ -17,11 +17,12 @@ pub fn load(
 #[derive(Debug, Default)]
 pub struct ModelProperties {
     lighting_model: LightingModel,
+    camera: Option<Camera>,
 }
 
 pub trait Model {
     fn render(&self, context: &mut ModelRenderContext);
-    fn set_view_projection_matrix(&mut self, matrix: &Matrix4);
+    fn set_camera(&mut self, camera: &Camera);
     fn set_lighting(&mut self, lights: &[Light]);
 }
 
