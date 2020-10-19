@@ -1,3 +1,4 @@
+use super::ModelProperties;
 use crate::engine::{assets::Asset, shaders, EngineError};
 
 pub struct InitData<'a> {
@@ -10,6 +11,7 @@ impl<'a> InitData<'a> {
     pub fn load(
         device: &wgpu::Device,
         buffers: &'a Vec<gltf::buffer::Data>,
+        _options: &ModelProperties,
     ) -> Result<Self, EngineError> {
         let vertex_shader = shaders::build(
             device,

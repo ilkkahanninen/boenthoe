@@ -10,7 +10,11 @@ pub struct TestEffect {
 
 impl TestEffect {
     pub fn attach(engine: &Engine) -> Result<(), EngineError> {
-        let model = model::load(engine, &engine.load_asset(&Path::new("assets/Box.glb")))?;
+        let model = model::load(
+            engine,
+            &engine.load_asset(&Path::new("assets/Box.glb")),
+            &model::ModelProperties::default(),
+        )?;
         let script = scripts::build(&engine.load_asset(&Path::new("assets/camerajump.boe")))?;
         let depth_buffer = textures::depth_buffer(engine);
         let camera = Camera::default();
@@ -44,6 +48,10 @@ impl Renderer for TestEffect {
             .into();
         self.model
             .set_view_projection_matrix(&self.camera.view_projection_matrix());
+        self.model.set_lighting(&[Light {
+            color: (1.0, 0.9, 0.8, 1.0).into(),
+            position: (5.0, 10.0, -15.0).into(),
+        }]);
     }
 
     fn render(&mut self, ctx: &mut RenderingContext) {

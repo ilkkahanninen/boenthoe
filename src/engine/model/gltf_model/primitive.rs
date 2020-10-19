@@ -1,4 +1,4 @@
-use super::{data::InitData, Matrix4, ModelRenderContext, TransformMatrices};
+use super::{data::InitData, Matrix4, ModelRenderContext, ModelRenderData};
 use crate::engine::object::Object;
 use crate::engine::{pipeline, prelude::*, storagebuffer::StorageObject};
 use gltf::mesh::Mode;
@@ -41,7 +41,10 @@ impl Primitive {
 
         // Uniforms
         let uniforms_storage = StorageObject::default(&engine.device, "gltf::Uniforms");
-        let bind_group_layouts = [uniforms_storage.get_layout()];
+        let bind_group_layouts = [
+            uniforms_storage.get_layout(),
+            &StorageVecObject::<Light>::create_layout(&engine.device, "Lights"),
+        ];
 
         // Render pipeline
         let label = format!("{}::pipeline", &label);
@@ -72,15 +75,16 @@ impl Primitive {
         }
     }
 
-    pub fn render(&self, context: &mut ModelRenderContext, transform: &TransformMatrices) {
+    pub fn render(&self, context: &mut ModelRenderContext, data: &ModelRenderData) {
         // Update uniforms buffer
         self.uniforms_storage
-            .copy_to_gpu(context.device, &mut context.encoder, &transform.into());
+            .copy_to_gpu(context.device, &mut context.encoder, &data.into());
 
         // Render
         let mut render_pass = context.begin_draw();
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, self.uniforms_storage.get_bind_group(), &[]);
+        render_pass.set_bind_group(1, data.lights, &[]);
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.set_index_buffer(self.index_buffer.slice(..));
         render_pass.draw_indexed(0..self.num_elements, 0, 0..1);
@@ -186,23 +190,23 @@ impl Vertex {
 #[derive(Debug, Copy, Clone)]
 struct Uniforms {
     view_projection_matrix: Matrix4,
-    space_matrix: Matrix4,
+    model_matrix: Matrix4,
 }
 
 impl Default for Uniforms {
     fn default() -> Self {
         Self {
             view_projection_matrix: cgmath::SquareMatrix::identity(),
-            space_matrix: cgmath::SquareMatrix::identity(),
+            model_matrix: cgmath::SquareMatrix::identity(),
         }
     }
 }
 
-impl From<&TransformMatrices<'_>> for Uniforms {
-    fn from(transform: &TransformMatrices) -> Self {
+impl From<&ModelRenderData<'_>> for Uniforms {
+    fn from(transform: &ModelRenderData) -> Self {
         Self {
-            view_projection_matrix: transform.view_projection.clone(),
-            space_matrix: transform.space.clone(),
+            view_projection_matrix: transform.view_projection_matrix.clone(),
+            model_matrix: transform.model_matrix.clone(),
         }
     }
 }

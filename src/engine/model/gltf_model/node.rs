@@ -1,4 +1,4 @@
-use super::{data::InitData, primitive::Primitive, Matrix4, ModelRenderContext, TransformMatrices};
+use super::{data::InitData, primitive::Primitive, Matrix4, ModelRenderContext, ModelRenderData};
 use crate::engine::prelude::*;
 
 pub struct Node {
@@ -26,17 +26,16 @@ impl Node {
         }
     }
 
-    pub fn render(&self, context: &mut ModelRenderContext, transforms: &TransformMatrices) {
-        let space_matrix = transforms.space * self.transform;
-        let transforms = TransformMatrices {
-            view_projection: transforms.view_projection,
-            space: &space_matrix,
+    pub fn render(&self, context: &mut ModelRenderContext, render_data: &ModelRenderData) {
+        let render_data = ModelRenderData {
+            model_matrix: &(render_data.model_matrix * self.transform),
+            ..*render_data
         };
         for primitive in self.primitives.iter() {
-            primitive.render(context, &transforms);
+            primitive.render(context, &render_data);
         }
         for child in self.children.iter() {
-            child.render(context, &transforms);
+            child.render(context, &render_data);
         }
     }
 }

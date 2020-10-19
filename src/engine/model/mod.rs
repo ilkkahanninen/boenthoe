@@ -3,16 +3,26 @@ mod gltf_model;
 use crate::engine::prelude::*;
 use gltf_model::GltfModel;
 
-pub fn load(engine: &Engine, asset: &Asset) -> Result<Box<dyn Model>, EngineError> {
+pub fn load(
+    engine: &Engine,
+    asset: &Asset,
+    options: &ModelProperties,
+) -> Result<Box<dyn Model>, EngineError> {
     match asset.get_type() {
-        AssetType::GltfModel => Ok(Box::new(GltfModel::new(engine, asset)?)),
+        AssetType::GltfModel => Ok(Box::new(GltfModel::new(engine, asset, options)?)),
         _ => Err(EngineError::unsupported_asset_format(asset, "GLTF")),
     }
+}
+
+#[derive(Debug, Default)]
+pub struct ModelProperties {
+    lighting_model: LightingModel,
 }
 
 pub trait Model {
     fn render(&self, context: &mut ModelRenderContext);
     fn set_view_projection_matrix(&mut self, matrix: &Matrix4);
+    fn set_lighting(&mut self, lights: &[Light]);
 }
 
 pub struct ModelRenderContext<'a> {
