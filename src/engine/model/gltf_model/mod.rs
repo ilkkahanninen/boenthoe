@@ -10,7 +10,7 @@ use std::path::Path;
 pub struct GltfModel {
     nodes: Vec<Node>,
     lights: Light,
-    lights_buffer: StorageObject<Light>,
+    lights_buffer: UniformBuffer<Light>,
     camera: Camera,
 }
 
@@ -71,7 +71,7 @@ impl GltfModel {
                 .map(|node| Node::new(engine, &node, &data))
                 .collect(),
             lights: Light::default(),
-            lights_buffer: StorageObject::new(&engine.device, "Lights"),
+            lights_buffer: UniformBuffer::new(&engine.device, "Lights"),
             camera,
         })
     }

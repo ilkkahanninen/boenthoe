@@ -3,6 +3,7 @@ use std::path::PathBuf;
 
 pub mod assets;
 pub mod camera;
+pub mod databuffers;
 pub mod engine;
 pub mod lights;
 pub mod model;
@@ -12,7 +13,6 @@ pub mod pipeline;
 pub mod renderer;
 pub mod scripts;
 pub mod shaders;
-pub mod storagebuffer;
 pub mod textures;
 pub mod timer;
 pub mod transform;
@@ -53,11 +53,11 @@ pub mod prelude {
 
     pub use super::assets::{Asset, AssetLibrary, AssetType};
     pub use super::camera::Camera;
+    pub use super::databuffers::{StorageBuffer, UniformBuffer};
     pub use super::engine::Engine;
     pub use super::lights::{Light, LightingModel};
     pub use super::object::Object;
     pub use super::renderer::{Renderer, RenderingContext};
-    pub use super::storagebuffer::{StorageObject, StorageVecObject};
     pub use super::textures;
     pub use super::textures::Texture;
     pub use super::EngineError;

@@ -1,6 +1,5 @@
 use super::{data::InitData, Matrix4, ModelRenderContext, ModelRenderData};
-use crate::engine::object::Object;
-use crate::engine::{pipeline, prelude::*, storagebuffer::StorageObject};
+use crate::engine::{pipeline, prelude::*};
 use gltf::mesh::Mode;
 use wgpu::util::DeviceExt;
 use wgpu::PrimitiveTopology;
@@ -9,7 +8,7 @@ pub struct Primitive {
     pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
-    uniforms_storage: StorageObject<Uniforms>,
+    uniforms_storage: UniformBuffer<Uniforms>,
     num_elements: u32,
 }
 
@@ -40,10 +39,10 @@ impl Primitive {
             });
 
         // Uniforms
-        let uniforms_storage = StorageObject::default(&engine.device, "gltf::Uniforms");
+        let uniforms_storage = UniformBuffer::default(&engine.device, "gltf::Uniforms");
         let bind_group_layouts = [
             uniforms_storage.get_layout(),
-            &StorageVecObject::<Light>::create_layout(&engine.device, "Lights"),
+            &UniformBuffer::<Light>::create_layout(&engine.device, "Lights"),
         ];
 
         // Render pipeline

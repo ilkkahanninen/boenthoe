@@ -1,7 +1,7 @@
 use crate::engine::object::Object;
 use wgpu::util::DeviceExt;
 
-pub struct StorageObject<T> {
+pub struct UniformBuffer<T> {
     buffer: wgpu::Buffer,
     bind_group_layout: wgpu::BindGroupLayout,
     bind_group: wgpu::BindGroup,
@@ -9,7 +9,7 @@ pub struct StorageObject<T> {
     phantom: std::marker::PhantomData<T>,
 }
 
-impl<T> StorageObject<T>
+impl<T> UniformBuffer<T>
 where
     T: bytemuck::Pod,
 {
@@ -27,19 +27,7 @@ where
     pub fn init(device: &wgpu::Device, initial_data: T, label: &str) -> Self {
         let buffer = Self::create_buffer(device, &initial_data, true, label);
 
-        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some(label),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
-                ty: wgpu::BindingType::StorageBuffer {
-                    dynamic: false,
-                    readonly: true,
-                    min_binding_size: None,
-                },
-                count: None,
-            }],
-        });
+        let bind_group_layout = Self::create_layout(device, label);
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some(label),
@@ -70,6 +58,22 @@ where
         );
     }
 
+    pub fn create_layout(device: &wgpu::Device, label: &str) -> wgpu::BindGroupLayout {
+        device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some(label),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
+                ty: wgpu::BindingType::StorageBuffer {
+                    dynamic: false,
+                    readonly: true,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+        })
+    }
+
     fn create_buffer(
         device: &wgpu::Device,
         data: &T,
@@ -89,7 +93,7 @@ where
     }
 }
 
-impl<T> Object for StorageObject<T> {
+impl<T> Object for UniformBuffer<T> {
     fn get_bind_group(&self) -> &wgpu::BindGroup {
         &self.bind_group
     }
@@ -99,7 +103,7 @@ impl<T> Object for StorageObject<T> {
     }
 }
 
-pub struct StorageVecObject<T> {
+pub struct StorageBuffer<T> {
     label: String,
     buffer: wgpu::Buffer,
     bind_group_layout: wgpu::BindGroupLayout,
@@ -107,7 +111,7 @@ pub struct StorageVecObject<T> {
     phantom: std::marker::PhantomData<T>,
 }
 
-impl<T> StorageVecObject<T>
+impl<T> StorageBuffer<T>
 where
     T: bytemuck::Pod,
 {
@@ -125,19 +129,7 @@ where
     pub fn init(device: &wgpu::Device, initial_data: Vec<T>, label: &str) -> Self {
         let buffer = Self::create_buffer(device, &initial_data, true, label);
 
-        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some(label),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
-                ty: wgpu::BindingType::StorageBuffer {
-                    dynamic: false,
-                    readonly: true,
-                    min_binding_size: None,
-                },
-                count: None,
-            }],
-        });
+        let bind_group_layout = Self::create_layout(device, label);
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some(label),
@@ -208,7 +200,7 @@ where
     }
 }
 
-impl<T> Object for StorageVecObject<T> {
+impl<T> Object for StorageBuffer<T> {
     fn get_bind_group(&self) -> &wgpu::BindGroup {
         &self.bind_group
     }

@@ -1,4 +1,4 @@
-use crate::engine::{camera::Camera, object::Object, storagebuffer::StorageObject};
+use crate::engine::prelude::*;
 
 #[derive(Debug, Copy, Clone)]
 pub struct ViewModel {
@@ -42,7 +42,7 @@ impl From<&ViewModel> for ViewUniform {
 
 pub struct ViewObject {
     pub model: ViewModel,
-    storage: StorageObject<ViewUniform>,
+    storage: UniformBuffer<ViewUniform>,
 }
 
 impl ViewObject {
@@ -53,7 +53,7 @@ impl ViewObject {
     pub fn init(device: &wgpu::Device, model: ViewModel) -> Self {
         Self {
             model,
-            storage: StorageObject::init(device, ViewUniform::from(&model), "View"),
+            storage: UniformBuffer::init(device, ViewUniform::from(&model), "View"),
         }
     }
 
