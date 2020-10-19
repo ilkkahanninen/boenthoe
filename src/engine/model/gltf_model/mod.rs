@@ -8,14 +8,15 @@ use node::Node;
 use std::path::Path;
 
 pub struct GltfModel {
-    view_projection_matrix: Matrix4,
     nodes: Vec<Node>,
     lights: Light,
     lights_buffer: StorageObject<Light>,
+    camera: Camera,
 }
 
 pub struct ModelRenderData<'a> {
     view_projection_matrix: &'a Matrix4,
+    eye_position: &'a Point3,
     model_matrix: &'a Matrix4,
     lights: &'a wgpu::BindGroup,
 }
@@ -26,7 +27,8 @@ impl Model for GltfModel {
             .copy_to_gpu(context.device, context.encoder, &self.lights);
 
         let transforms = ModelRenderData {
-            view_projection_matrix: &self.view_projection_matrix,
+            view_projection_matrix: &self.camera.view_projection_matrix(),
+            eye_position: &self.camera.eye,
             model_matrix: &cgmath::SquareMatrix::identity(),
             lights: self.lights_buffer.get_bind_group(),
         };
@@ -36,8 +38,8 @@ impl Model for GltfModel {
         }
     }
 
-    fn set_view_projection_matrix(&mut self, matrix: &Matrix4) {
-        self.view_projection_matrix = matrix.clone();
+    fn set_camera(&mut self, camera: &Camera) {
+        self.camera = camera.clone();
     }
 
     fn set_lighting(&mut self, lights: &[Light]) {
@@ -61,14 +63,16 @@ impl GltfModel {
             .or_else(|| gltf.scenes().next())
             .ok_or_else(|| EngineError::parse_error(source, "The file does not have any scenes"))?;
 
+        let camera = options.camera.unwrap_or(Camera::default());
+
         Ok(GltfModel {
-            view_projection_matrix: Camera::default().view_projection_matrix(),
             nodes: scene
                 .nodes()
                 .map(|node| Node::new(engine, &node, &data))
                 .collect(),
             lights: Light::default(),
             lights_buffer: StorageObject::new(&engine.device, "Lights"),
+            camera,
         })
     }
 
