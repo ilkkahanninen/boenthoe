@@ -4,6 +4,7 @@ use std::path::PathBuf;
 pub mod assets;
 pub mod camera;
 pub mod engine;
+pub mod lights;
 pub mod model;
 pub mod music;
 pub mod object;
@@ -46,12 +47,16 @@ impl EngineError {
 }
 
 pub mod prelude {
+    pub type Matrix3 = cgmath::Matrix3<f32>;
     pub type Matrix4 = cgmath::Matrix4<f32>;
 
     pub use super::assets::{Asset, AssetLibrary, AssetType};
     pub use super::camera::Camera;
     pub use super::engine::Engine;
+    pub use super::lights::{Light, LightingModel};
+    pub use super::object::Object;
     pub use super::renderer::{Renderer, RenderingContext};
+    pub use super::storagebuffer::{StorageObject, StorageVecObject};
     pub use super::textures;
     pub use super::textures::Texture;
     pub use super::EngineError;

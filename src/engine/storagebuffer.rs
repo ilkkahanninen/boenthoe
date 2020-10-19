@@ -100,32 +100,33 @@ impl<T> Object for StorageObject<T> {
 }
 
 pub struct StorageVecObject<T> {
-    pub data: Vec<T>,
+    label: String,
     buffer: wgpu::Buffer,
     bind_group_layout: wgpu::BindGroupLayout,
     bind_group: wgpu::BindGroup,
+    phantom: std::marker::PhantomData<T>,
 }
 
 impl<T> StorageVecObject<T>
 where
     T: bytemuck::Pod,
 {
-    pub fn new(device: &wgpu::Device, item_count: usize) -> Self {
-        Self::init(device, vec![T::zeroed(); item_count])
+    pub fn new(device: &wgpu::Device, item_count: usize, label: &str) -> Self {
+        Self::init(device, vec![T::zeroed(); item_count], label)
     }
 
-    pub fn default(device: &wgpu::Device, item_count: usize) -> Self
+    pub fn default(device: &wgpu::Device, item_count: usize, label: &str) -> Self
     where
         T: Default,
     {
-        Self::init(device, vec![T::default(); item_count])
+        Self::init(device, vec![T::default(); item_count], label)
     }
 
-    pub fn init(device: &wgpu::Device, initial_data: Vec<T>) -> Self {
-        let buffer = Self::create_buffer(device, &initial_data, true);
+    pub fn init(device: &wgpu::Device, initial_data: Vec<T>, label: &str) -> Self {
+        let buffer = Self::create_buffer(device, &initial_data, true, label);
 
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("StorageVecObject"),
+            label: Some(label),
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
                 visibility: wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
@@ -139,7 +140,7 @@ where
         });
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("StorageVecObject"),
+            label: Some(label),
             layout: &bind_group_layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
@@ -148,29 +149,52 @@ where
         });
 
         Self {
-            data: initial_data,
+            label: label.into(),
             buffer,
             bind_group_layout,
             bind_group,
+            phantom: std::marker::PhantomData,
         }
     }
 
-    pub fn copy_to_gpu(&self, device: &wgpu::Device, encoder: &mut wgpu::CommandEncoder) {
-        let staging_buffer = Self::create_buffer(device, &self.data, false);
+    pub fn copy_to_gpu(
+        &self,
+        device: &wgpu::Device,
+        encoder: &mut wgpu::CommandEncoder,
+        data: &[T],
+    ) {
+        let staging_buffer = Self::create_buffer(device, data, false, &self.label);
         encoder.copy_buffer_to_buffer(
             &staging_buffer,
             0,
             &self.buffer,
             0,
-            (self.data.len() * std::mem::size_of::<T>()) as wgpu::BufferAddress,
+            (data.len() * std::mem::size_of::<T>()) as wgpu::BufferAddress,
         );
     }
 
-    pub fn all(&self) -> std::ops::Range<u32> {
-        0..(self.data.len() as u32)
+    pub fn create_layout(device: &wgpu::Device, label: &str) -> wgpu::BindGroupLayout {
+        device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some(label),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
+                ty: wgpu::BindingType::StorageBuffer {
+                    dynamic: false,
+                    readonly: true,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+        })
     }
 
-    fn create_buffer(device: &wgpu::Device, data: &Vec<T>, is_destination: bool) -> wgpu::Buffer {
+    fn create_buffer(
+        device: &wgpu::Device,
+        data: &[T],
+        is_destination: bool,
+        label: &str,
+    ) -> wgpu::Buffer {
         device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             contents: bytemuck::cast_slice(&data),
             usage: wgpu::BufferUsage::STORAGE
@@ -179,7 +203,7 @@ where
                 } else {
                     wgpu::BufferUsage::COPY_SRC
                 },
-            label: Some("StorageVecObject"),
+            label: Some(label),
         })
     }
 }

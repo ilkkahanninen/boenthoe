@@ -2,7 +2,7 @@ mod data;
 mod node;
 mod primitive;
 
-use super::{Model, ModelRenderContext};
+use super::{Model, ModelProperties, ModelRenderContext};
 use crate::engine::{camera::Camera, prelude::*, shaders};
 use node::Node;
 use std::path::Path;
@@ -10,19 +10,27 @@ use std::path::Path;
 pub struct GltfModel {
     view_projection_matrix: Matrix4,
     nodes: Vec<Node>,
+    lights: Light,
+    lights_buffer: StorageObject<Light>,
 }
 
-pub struct TransformMatrices<'a> {
-    view_projection: &'a Matrix4,
-    space: &'a Matrix4,
+pub struct ModelRenderData<'a> {
+    view_projection_matrix: &'a Matrix4,
+    model_matrix: &'a Matrix4,
+    lights: &'a wgpu::BindGroup,
 }
 
 impl Model for GltfModel {
     fn render(&self, context: &mut ModelRenderContext) {
-        let transforms = TransformMatrices {
-            view_projection: &self.view_projection_matrix,
-            space: &cgmath::SquareMatrix::identity(),
+        self.lights_buffer
+            .copy_to_gpu(context.device, context.encoder, &self.lights);
+
+        let transforms = ModelRenderData {
+            view_projection_matrix: &self.view_projection_matrix,
+            model_matrix: &cgmath::SquareMatrix::identity(),
+            lights: self.lights_buffer.get_bind_group(),
         };
+
         for node in self.nodes.iter() {
             node.render(context, &transforms);
         }
@@ -31,14 +39,22 @@ impl Model for GltfModel {
     fn set_view_projection_matrix(&mut self, matrix: &Matrix4) {
         self.view_projection_matrix = matrix.clone();
     }
+
+    fn set_lighting(&mut self, lights: &[Light]) {
+        self.lights = lights.get(0).unwrap().clone();
+    }
 }
 
 impl GltfModel {
-    pub fn new(engine: &Engine, source: &Asset) -> Result<Self, EngineError> {
+    pub fn new(
+        engine: &Engine,
+        source: &Asset,
+        options: &ModelProperties,
+    ) -> Result<Self, EngineError> {
         let (gltf, buffers, _images) = gltf::import_slice(source.data()?)
             .or_else(|error| Err(EngineError::parse_error(source, error)))?;
 
-        let data = data::InitData::load(&engine.device, &buffers)?;
+        let data = data::InitData::load(&engine.device, &buffers, options)?;
 
         let scene = gltf
             .default_scene()
@@ -51,6 +67,8 @@ impl GltfModel {
                 .nodes()
                 .map(|node| Node::new(engine, &node, &data))
                 .collect(),
+            lights: Light::default(),
+            lights_buffer: StorageObject::new(&engine.device, "Lights"),
         })
     }
 
