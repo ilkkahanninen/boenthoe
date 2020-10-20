@@ -12,7 +12,7 @@ impl TestEffect {
     pub fn attach(engine: &Engine) -> Result<(), EngineError> {
         let model = model::load(
             engine,
-            &engine.load_asset(&Path::new("assets/Box.glb")),
+            &engine.load_asset(&Path::new("assets/Duck.glb")),
             &model::ModelProperties::default(),
         )?;
         let script = scripts::build(&engine.load_asset(&Path::new("assets/camerajump.boe")))?;
