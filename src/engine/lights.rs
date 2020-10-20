@@ -34,6 +34,32 @@ pub enum Light {
     },
 }
 
+impl Light {
+    pub fn is_lit(&self) -> bool {
+        match self {
+            Self::Unlit => false,
+            Self::Directional {
+                ambient,
+                diffuse,
+                specular,
+                ..
+            } => is_nonblack(ambient) || is_nonblack(diffuse) || is_nonblack(specular),
+            Self::Point {
+                ambient,
+                diffuse,
+                specular,
+                ..
+            } => is_nonblack(ambient) || is_nonblack(diffuse) || is_nonblack(specular),
+            Self::Spotlight {
+                ambient,
+                diffuse,
+                specular,
+                ..
+            } => is_nonblack(ambient) || is_nonblack(diffuse) || is_nonblack(specular),
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone)]
 enum LightType {
     Unlit,
@@ -155,6 +181,10 @@ fn homogeneous_direction(direction: &Vector3) -> Vector4 {
 
 fn rgba_color(rgb: &Vector3) -> Vector4 {
     Vector4::new(rgb.x, rgb.y, rgb.z, 1.0)
+}
+
+fn is_nonblack(rgb: &Vector3) -> bool {
+    rgb.x != 0.0 && rgb.y != 0.0 && rgb.z != 0.0
 }
 
 #[derive(Debug, Copy, Clone)]

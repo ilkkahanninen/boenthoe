@@ -19,25 +19,33 @@ pub struct ModelRenderData<'a> {
     eye_position: &'a Point3,
     model_matrix: &'a Matrix4,
     lights: &'a wgpu::BindGroup,
+    number_of_lights: u32,
 }
 
 impl Model for GltfModel {
     fn render(&self, context: &mut ModelRenderContext) {
-        let light_buffer_objects: Vec<LightBufferObject> =
-            self.lights.iter().map(LightBufferObject::from).collect();
+        let light_buffer_objects: Vec<LightBufferObject> = self
+            .lights
+            .iter()
+            .filter(|light| light.is_lit())
+            .map(LightBufferObject::from)
+            .collect();
 
-        self.lights_buffer
-            .copy_to_gpu(context.device, context.encoder, &light_buffer_objects);
+        if light_buffer_objects.len() > 0 {
+            self.lights_buffer
+                .copy_to_gpu(context.device, context.encoder, &light_buffer_objects);
+        }
 
-        let transforms = ModelRenderData {
+        let data = ModelRenderData {
             view_projection_matrix: &self.camera.view_projection_matrix(),
             eye_position: &self.camera.eye,
             model_matrix: &cgmath::SquareMatrix::identity(),
             lights: self.lights_buffer.get_bind_group(),
+            number_of_lights: light_buffer_objects.len() as u32,
         };
 
         for node in self.nodes.iter() {
-            node.render(context, &transforms);
+            node.render(context, &data);
         }
     }
 

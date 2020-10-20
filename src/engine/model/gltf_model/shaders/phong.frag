@@ -15,7 +15,8 @@ struct Light {
 layout(set=0, binding=0) uniform Uniforms {
     mat4 u_view_proj_matrix;
     mat4 u_model_matrix;
-    vec3 u_eye_position;
+    vec4 u_eye_position;
+    uint u_number_of_lights;
 };
 
 // Bind group, index 1.0: Lights
@@ -52,7 +53,7 @@ vec4 phong_model(
     vec3 diffuse = diff * light.diffuse.rgb;
 
     // Specular light
-    vec3 view_dir = normalize(u_eye_position - a_position);
+    vec3 view_dir = normalize(u_eye_position.xyz - a_position);
     vec3 reflect_dir = reflect(-light_dir, norm);
     float spec = pow(max(dot(view_dir, reflect_dir), 0.0), 32);
     vec3 specular = specular_strength * spec * light.specular.rgb;
@@ -114,7 +115,8 @@ vec4 calculate_light(Light light) {
 
 void main() {
     vec4 result;
-    for (int i = 0; i < 4; i++) { // TODO: Get number of lights from uniform buffer
+    uint number_of_lights = min(u_number_of_lights, 64);
+    for (int i = 0; i < number_of_lights; i++) {
         result += calculate_light(u_lights[i]);
     }
     out_color = result;

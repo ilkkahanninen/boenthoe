@@ -190,7 +190,9 @@ impl Vertex {
 struct Uniforms {
     view_projection_matrix: Matrix4,
     model_matrix: Matrix4,
-    eye_position: Point3, // Notice: Remember to add padding when adding the next property
+    eye_position: Vector4,
+    number_of_lights: u32,
+    _padding: [u32; 3],
 }
 
 impl Default for Uniforms {
@@ -198,7 +200,9 @@ impl Default for Uniforms {
         Self {
             view_projection_matrix: cgmath::SquareMatrix::identity(),
             model_matrix: cgmath::SquareMatrix::identity(),
-            eye_position: (0.0, 0.0, 0.0).into(),
+            eye_position: (0.0, 0.0, 0.0, 1.0).into(),
+            number_of_lights: 0,
+            _padding: [0xcc, 0xcc, 0xcc],
         }
     }
 }
@@ -208,7 +212,9 @@ impl From<&ModelRenderData<'_>> for Uniforms {
         Self {
             view_projection_matrix: data.view_projection_matrix.clone(),
             model_matrix: data.model_matrix.clone(),
-            eye_position: data.eye_position.clone(),
+            eye_position: data.eye_position.to_homogeneous(),
+            number_of_lights: data.number_of_lights,
+            ..Default::default()
         }
     }
 }
