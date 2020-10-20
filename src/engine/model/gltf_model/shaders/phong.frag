@@ -35,7 +35,13 @@ layout(location=3) in vec4 a_color;
 
 layout(location=0) out vec4 out_color;
 
-vec4 phong_model(Light light, vec3 light_dir, float ambient_strength, float specular_strength) {
+vec4 phong_model(
+    Light light,
+    vec3 light_dir,
+    float attenuation,
+    float ambient_strength,
+    float specular_strength
+) {
     vec3 norm = normalize(a_normal);
 
     // Ambient light
@@ -52,7 +58,7 @@ vec4 phong_model(Light light, vec3 light_dir, float ambient_strength, float spec
     vec3 specular = specular_strength * spec * light.specular.rgb;
 
     // Mix lights
-    vec3 result = (ambient + diffuse + specular) * a_color.rgb;
+    vec3 result = (ambient + diffuse + specular) * attenuation * a_color.rgb;
     return vec4(result, a_color.a);
 }
 
@@ -65,14 +71,21 @@ vec4 calculate_light(Light light) {
             return phong_model(
                 light,
                 normalize(-light.direction.xyz),
+                1.0,
                 0.1,
                 0.5
             );
 
         case 2: // Point
+            vec3 light_vec = light.position.xyz - a_position;
+            float distance = length(light_vec);
             return phong_model(
                 light,
-                normalize(light.position.xyz - a_position),
+                normalize(light_vec),
+                1.0 / (
+                    light.parameters.x +
+                    light.parameters.y * distance +
+                    light.parameters.z * distance * distance),
                 0.1,
                 0.5
             );

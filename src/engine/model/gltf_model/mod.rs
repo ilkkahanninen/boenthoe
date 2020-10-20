@@ -25,7 +25,6 @@ impl Model for GltfModel {
     fn render(&self, context: &mut ModelRenderContext) {
         let light_buffer_objects: Vec<LightBufferObject> =
             self.lights.iter().map(LightBufferObject::from).collect();
-        println!("Lights: {:?}", light_buffer_objects);
 
         self.lights_buffer
             .copy_to_gpu(context.device, context.encoder, &light_buffer_objects);
