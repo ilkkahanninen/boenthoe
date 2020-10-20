@@ -1,11 +1,11 @@
 out eye_x = loop(concat(
-    linear(-5, 5, 0.7),
-    linear(5, -5, 0.33)
+    linear(-5, 5, 2.7),
+    linear(5, -5, 2.33)
 ))
 
 out eye_y = loop(concat(
-    linear(-5, 5, 0.45),
-    linear(5, -5, 0.9)
+    linear(-5, 5, 2.45),
+    linear(5, -5, 2.9)
 ))
 
-out eye_z = hold(-10, 0)
+out eye_z = hold(10, 0)

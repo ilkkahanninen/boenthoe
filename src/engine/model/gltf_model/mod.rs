@@ -9,8 +9,8 @@ use std::path::Path;
 
 pub struct GltfModel {
     nodes: Vec<Node>,
-    lights: Light,
-    lights_buffer: UniformBuffer<Light>,
+    lights: Vec<Light>,
+    lights_buffer: StorageBuffer<LightBufferObject>,
     camera: Camera,
 }
 
@@ -23,8 +23,12 @@ pub struct ModelRenderData<'a> {
 
 impl Model for GltfModel {
     fn render(&self, context: &mut ModelRenderContext) {
+        let light_buffer_objects: Vec<LightBufferObject> =
+            self.lights.iter().map(LightBufferObject::from).collect();
+        println!("Lights: {:?}", light_buffer_objects);
+
         self.lights_buffer
-            .copy_to_gpu(context.device, context.encoder, &self.lights);
+            .copy_to_gpu(context.device, context.encoder, &light_buffer_objects);
 
         let transforms = ModelRenderData {
             view_projection_matrix: &self.camera.view_projection_matrix(),
@@ -43,7 +47,7 @@ impl Model for GltfModel {
     }
 
     fn set_lighting(&mut self, lights: &[Light]) {
-        self.lights = lights.get(0).unwrap().clone();
+        self.lights = lights.to_vec();
     }
 }
 
@@ -70,8 +74,8 @@ impl GltfModel {
                 .nodes()
                 .map(|node| Node::new(engine, &node, &data))
                 .collect(),
-            lights: Light::default(),
-            lights_buffer: UniformBuffer::new(&engine.device, "Lights"),
+            lights: Vec::new(),
+            lights_buffer: StorageBuffer::new(&engine.device, 16, "Lights"),
             camera,
         })
     }

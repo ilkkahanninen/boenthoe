@@ -42,7 +42,7 @@ impl Primitive {
         let uniforms_storage = UniformBuffer::default(&engine.device, "gltf::Uniforms");
         let bind_group_layouts = [
             uniforms_storage.get_layout(),
-            &UniformBuffer::<Light>::create_layout(&engine.device, "Lights"),
+            &StorageBuffer::<LightBufferObject>::create_layout(&engine.device, "gltf::Lights"),
         ];
 
         // Render pipeline

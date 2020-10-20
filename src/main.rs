@@ -25,6 +25,6 @@ fn main() {
 
     match demo::init(&mut window.window) {
         Ok(engine) => window.run(engine),
-        Err(err) => panic!("Demo initialization failed:\n\n{:?}", err),
+        Err(err) => panic!("Demo initialization failed:\n\n{:#?}", err),
     }
 }

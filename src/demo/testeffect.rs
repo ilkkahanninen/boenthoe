@@ -49,23 +49,24 @@ impl Renderer for TestEffect {
 
         self.model.set_camera(&self.camera);
 
-        self.model.set_lighting(&[Light {
-            color: (1.0, 0.9, 0.8, 1.0).into(),
-            position: (5.0, 10.0, -15.0).into(),
-        }]);
+        self.model.set_lighting(&[
+            Light::Directional {
+                direction: (1.0, -1.0, -0.33).into(),
+                ambient: (0.0, 0.0, 0.0).into(),
+                diffuse: (1.0, 0.0, 1.0).into(),
+                specular: (1.0, 1.0, 1.0).into(),
+            },
+            Light::Directional {
+                direction: (-1.0, -1.0, 0.33).into(),
+                ambient: (0.0, 0.0, 0.0).into(),
+                diffuse: (0.0, 1.0, 1.0).into(),
+                specular: (1.0, 1.0, 1.0).into(),
+            },
+        ]);
     }
 
     fn render(&mut self, ctx: &mut RenderingContext) {
-        ctx.clear(
-            wgpu::Color {
-                r: 0.02,
-                g: 0.05,
-                b: 0.1,
-                a: 1.0,
-            },
-            None,
-            Some(&self.depth_buffer.view),
-        );
+        ctx.clear(wgpu::Color::BLACK, None, Some(&self.depth_buffer.view));
 
         self.model.render(&mut model::ModelRenderContext {
             device: ctx.device,

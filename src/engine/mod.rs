@@ -48,6 +48,8 @@ impl EngineError {
 
 pub mod prelude {
     pub type Point3 = cgmath::Point3<f32>;
+    pub type Vector3 = cgmath::Vector3<f32>;
+    pub type Vector4 = cgmath::Vector4<f32>;
     pub type Matrix3 = cgmath::Matrix3<f32>;
     pub type Matrix4 = cgmath::Matrix4<f32>;
 
@@ -55,7 +57,7 @@ pub mod prelude {
     pub use super::camera::Camera;
     pub use super::databuffers::{StorageBuffer, UniformBuffer};
     pub use super::engine::Engine;
-    pub use super::lights::{Light, LightingModel};
+    pub use super::lights::{Light, LightBufferObject, LightingModel};
     pub use super::object::Object;
     pub use super::renderer::{Renderer, RenderingContext};
     pub use super::textures;

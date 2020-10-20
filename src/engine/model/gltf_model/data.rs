@@ -24,8 +24,8 @@ impl<'a> InitData<'a> {
         let fragment_shader = shaders::build(
             device,
             &Asset::Ready {
-                path: "engine/model/gltf_model/shaders/gltf.frag".into(),
-                data: include_bytes!("shaders/gltf.frag").to_vec(),
+                path: "engine/model/gltf_model/shaders/phong.frag".into(),
+                data: include_bytes!("shaders/phong.frag").to_vec(),
             },
         )?;
 
