@@ -90,6 +90,23 @@ vec4 calculate_light(Light light) {
                 0.5
             );
 
+        case 3: // Spotlight
+            float inner = light.parameters.x;
+            float outer = light.parameters.y;
+
+            vec3 light_dir = normalize(light.position.xyz - a_position);
+            float theta = dot(light_dir, normalize(-light.direction.xyz));
+            float epsilon = inner - outer;
+            float intensity = clamp((theta - outer) / epsilon, 0.0, 1.0);
+
+            return phong_model(
+                light,
+                light_dir,
+                intensity,
+                0.1,
+                0.5
+            );
+
         default:
             return vec4(1.0, 0.0, 0.0, 0.0);
     }

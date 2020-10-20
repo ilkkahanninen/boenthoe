@@ -23,14 +23,14 @@ pub enum Light {
     },
     Spotlight {
         position: Point3,
-        direction: Vector3,
+        look_at: Point3,
 
         ambient: Vector3,
         diffuse: Vector3,
         specular: Vector3,
 
-        inner_cutoff: f32,
-        outer_cutoff: f32,
+        angle: cgmath::Deg<f32>,
+        hardness: f32,
     },
 }
 
@@ -108,22 +108,28 @@ impl From<&Light> for LightBufferObject {
             },
             Light::Spotlight {
                 position,
-                direction,
+                look_at,
                 ambient,
                 diffuse,
                 specular,
-                inner_cutoff,
-                outer_cutoff,
-            } => Self {
-                light_type: LightType::Spotlight.into(),
-                position: position.to_homogeneous(),
-                direction: homogeneous_direction(direction),
-                ambient: rgba_color(ambient),
-                diffuse: rgba_color(diffuse),
-                specular: rgba_color(specular),
-                parameters: Vector4::new(*inner_cutoff, *outer_cutoff, 0.0, 0.0),
-                ..Default::default()
-            },
+                angle,
+                hardness,
+            } => {
+                let clamped_hardness = hardness.min(1.0).max(0.0);
+                let angle = cgmath::Rad::from(*angle).0;
+                let inner_angle = angle * (1.0 - clamped_hardness);
+                let outer_angle = angle * (1.0 + clamped_hardness);
+                Self {
+                    light_type: LightType::Spotlight.into(),
+                    position: position.to_homogeneous(),
+                    direction: homogeneous_direction(&(look_at - position)),
+                    ambient: rgba_color(ambient),
+                    diffuse: rgba_color(diffuse),
+                    specular: rgba_color(specular),
+                    parameters: Vector4::new(inner_angle.cos(), outer_angle.cos(), 0.0, 0.0),
+                    ..Default::default()
+                }
+            }
         }
     }
 }

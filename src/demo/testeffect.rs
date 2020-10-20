@@ -70,11 +70,25 @@ impl Renderer for TestEffect {
             Light::Point {
                 position: (0.0, time.sin() * 3.0, time.cos() * 3.0).into(),
                 ambient: (0.0, 0.0, 0.2).into(),
-                diffuse: (1.0, 0.5, 0.0).into(),
+                diffuse: (0.0, 0.0, 1.0).into(),
                 specular: (1.0, 1.0, 1.0).into(),
                 constant: 1.0,
                 linear: 0.35,
                 quadrant: 0.44,
+            },
+            Light::Spotlight {
+                position: (
+                    (time * 3.0).sin() * 5.0,
+                    (time * 3.2).sin() * 5.0,
+                    (time * 3.4).sin() * 5.0,
+                )
+                    .into(),
+                look_at: (0.0, 1.0, 0.0).into(),
+                ambient: (0.0, 0.0, 0.1).into(),
+                diffuse: (1.0, 0.9, 0.5).into(),
+                specular: (1.0, 1.0, 0.5).into(),
+                angle: cgmath::Deg(10.0),
+                hardness: 0.5,
             },
         ]);
     }
