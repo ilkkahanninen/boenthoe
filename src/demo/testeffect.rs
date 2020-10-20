@@ -39,13 +39,18 @@ impl Renderer for TestEffect {
     }
 
     fn update(&mut self, ctx: &mut RenderingContext) {
+        let time = ctx.time as f32;
         self.script.set_time(ctx.time);
         self.camera.eye = (
-            self.script.get("eye_x").to_f() as f32,
-            self.script.get("eye_y").to_f() as f32,
-            self.script.get("eye_z").to_f() as f32,
+            time.sin() * 4.0,
+            (time * 2.7).sin() + 1.0,
+            time.cos() * 4.0
+            // self.script.get("eye_x").to_f() as f32,
+            // self.script.get("eye_y").to_f() as f32,
+            // self.script.get("eye_z").to_f() as f32,
         )
             .into();
+        self.camera.target.y = 1.0;
 
         self.model.set_camera(&self.camera);
 

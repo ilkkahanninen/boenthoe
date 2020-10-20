@@ -4,8 +4,8 @@ out eye_x = loop(concat(
 ))
 
 out eye_y = loop(concat(
-    linear(-5, 5, 2.45),
-    linear(5, -5, 2.9)
+    linear(0, 5, 2.45),
+    linear(5, 0, 2.9)
 ))
 
-out eye_z = hold(10, 0)
+out eye_z = hold(5, 0)
