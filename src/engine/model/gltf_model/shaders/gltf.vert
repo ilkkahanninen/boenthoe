@@ -1,4 +1,5 @@
 #version 450
+#include "uniforms.glsl"
 
 // Vertex buffer inputs
 
@@ -6,17 +7,6 @@ layout(location=0) in vec3 a_position;
 layout(location=1) in vec3 a_normal;
 layout(location=2) in vec2 a_tex_coords;
 layout(location=3) in vec4 a_color;
-
-// Bind group, index 0.0: Uniforms
-
-layout(set=0, binding=0) uniform Uniforms {
-    mat4 u_view_proj_matrix;
-    mat4 u_model_matrix;
-    vec4 u_eye_position;
-    vec4 u_base_color;
-    uint u_number_of_lights;
-    float u_metallic_factor;
-};
 
 // Outputs to fragment shader
 

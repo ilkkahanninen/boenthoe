@@ -22,6 +22,7 @@ pub enum Asset {
     Pending { path: PathBuf },
     Ready { path: PathBuf, data: Vec<u8> },
     Error { path: PathBuf, message: String },
+    Preloaded { path: PathBuf, data: Vec<u8> },
 }
 
 impl Asset {
@@ -36,6 +37,13 @@ impl Asset {
         match data {
             Ok(data) => Asset::Ready { path, data },
             Err(message) => Asset::Error { path, message },
+        }
+    }
+
+    fn preload(path: PathBuf, data: &[u8]) -> Self {
+        Self::Ready {
+            path,
+            data: data.to_vec(),
         }
     }
 
@@ -56,22 +64,22 @@ impl Asset {
 
     pub fn path(&self) -> &PathBuf {
         match self {
-            Self::Pending { path, .. } | Self::Ready { path, .. } | Self::Error { path, .. } => {
-                path
-            }
+            Self::Pending { path, .. }
+            | Self::Ready { path, .. }
+            | Self::Error { path, .. }
+            | Self::Preloaded { path, .. } => path,
         }
     }
 
     pub fn data(&self) -> Result<&Vec<u8>, EngineError> {
         match self {
             Asset::Ready { data, .. } => Ok(data),
+            Asset::Preloaded { data, .. } => Ok(data),
             Asset::Error { path, message } => Err(EngineError::AssetLoadError {
                 path: path.clone(),
                 message: message.clone(),
             }),
-            _ => Err(EngineError::AssetNotLoaded {
-                path: self.path().clone(),
-            }),
+            Self::Pending { path } => Err(EngineError::AssetNotLoaded { path: path.clone() }),
         }
     }
 
@@ -117,13 +125,26 @@ impl AssetLibrary {
 
     /// Load asset from asset path
     pub fn load(&mut self, path: &Path) -> Rc<Asset> {
-        let path = Path::new(&self.asset_path).join(path);
-        let exact_path = std::fs::canonicalize(&path).unwrap();
-        let relative_path = self.relative_path(&path);
+        match self.assets.get(&path.to_path_buf()) {
+            Some(asset) => asset.clone(),
+            None => {
+                let path = Path::new(&self.asset_path).join(path);
+                let exact_path = std::fs::canonicalize(&path).unwrap();
+                let relative_path = self.relative_path(&path);
 
-        println!("Load asset {:?}...", relative_path);
-        let asset = Rc::<Asset>::new(Asset::load(exact_path.clone()));
-        self.assets.insert(relative_path, asset.clone());
+                println!("Load asset {:?}...", relative_path);
+                let asset = Rc::<Asset>::new(Asset::load(exact_path.clone()));
+                self.assets.insert(relative_path, asset.clone());
+                asset.clone()
+            }
+        }
+    }
+
+    /// Add preloaded asset to library
+    pub fn add(&mut self, path: &Path, data: &[u8]) -> Rc<Asset> {
+        println!("Add asset {:?}...", path);
+        let asset = Rc::<Asset>::new(Asset::preload(path.to_path_buf(), data));
+        self.assets.insert(path.to_path_buf(), asset.clone());
         asset.clone()
     }
 

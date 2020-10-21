@@ -1,31 +1,5 @@
 #version 450
-
-struct Light {
-    vec4 position;
-    vec4 direction;
-    vec4 ambient;
-    vec4 diffuse;
-    vec4 specular;
-    vec4 parameters;
-    uint type; // 0 = off, 1 = directional, 2 = point, 3 = spotlight
-};
-
-// Bind group, index 0.0: Uniforms
-
-layout(set=0, binding=0) uniform Uniforms {
-    mat4 u_view_proj_matrix;
-    mat4 u_model_matrix;
-    vec4 u_eye_position;
-    vec4 u_base_color;
-    uint u_number_of_lights;
-    float u_metallic_factor;
-};
-
-// Bind group, index 1.0: Lights
-
-layout(set=1, binding=0) buffer Lights {
-    Light u_lights[];
-};
+#include "uniforms.glsl"
 
 // Inputs from vertex shader
 

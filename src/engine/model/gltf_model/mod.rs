@@ -3,9 +3,8 @@ mod node;
 mod primitive;
 
 use super::{Model, ModelProperties, ModelRenderContext};
-use crate::engine::{camera::Camera, prelude::*, shaders};
+use crate::engine::{camera::Camera, prelude::*};
 use node::Node;
-use std::path::Path;
 
 pub struct GltfModel {
     nodes: Vec<Node>,
@@ -67,7 +66,7 @@ impl GltfModel {
         let (gltf, buffers, _images) = gltf::import_slice(source.data()?)
             .or_else(|error| Err(EngineError::parse_error(source, error)))?;
 
-        let data = data::InitData::load(&engine.device, &buffers, options)?;
+        let data = data::InitData::load(engine, &buffers, options)?;
 
         let scene = gltf
             .default_scene()
@@ -85,15 +84,5 @@ impl GltfModel {
             lights_buffer: StorageBuffer::new(&engine.device, 16, "gltf::Lights"),
             camera,
         })
-    }
-
-    fn default_vertex_shader(device: &wgpu::Device) -> Result<wgpu::ShaderModule, EngineError> {
-        shaders::build(
-            device,
-            &Asset::Ready {
-                path: Path::new("engine::model::gltf.vert").to_path_buf(),
-                data: include_bytes!("shaders/gltf.vert").to_vec(),
-            },
-        )
     }
 }

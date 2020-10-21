@@ -60,7 +60,10 @@ pub mod prelude {
     pub use super::lights::{Light, LightBufferObject, LightingModel};
     pub use super::object::Object;
     pub use super::renderer::{Renderer, RenderingContext};
+    pub use super::shaders;
     pub use super::textures;
     pub use super::textures::Texture;
     pub use super::EngineError;
+
+    pub use std::path::{Path, PathBuf};
 }

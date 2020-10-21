@@ -97,6 +97,10 @@ impl Engine {
         self.asset_library.lock().unwrap().load(path)
     }
 
+    pub fn add_asset(&self, path: &Path, data: &[u8]) -> Rc<assets::Asset> {
+        self.asset_library.lock().unwrap().add(path, data)
+    }
+
     pub fn get_dir_of_asset(&self, asset: &assets::Asset) -> PathBuf {
         self.asset_library.lock().unwrap().asset_dir(asset)
     }
