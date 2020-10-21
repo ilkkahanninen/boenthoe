@@ -8,8 +8,9 @@ pub struct Primitive {
     pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
-    uniforms_storage: UniformBuffer<Uniforms>,
     num_elements: u32,
+    uniforms_storage: UniformBuffer<Uniforms>,
+    material: Material,
 }
 
 impl Primitive {
@@ -38,6 +39,14 @@ impl Primitive {
                 usage: wgpu::BufferUsage::INDEX,
             });
 
+        // Material
+        let primitive_material = primitive.material();
+        let pbr_model = primitive_material.pbr_metallic_roughness();
+        let material = Material {
+            base_color: pbr_model.base_color_factor().into(),
+            metallic_factor: pbr_model.metallic_factor(),
+        };
+
         // Uniforms
         let uniforms_storage = UniformBuffer::default(&engine.device, "gltf::Uniforms");
         let bind_group_layouts = [
@@ -53,7 +62,11 @@ impl Primitive {
             .fragment_shader(&data.fragment_shader)
             .vertex_buffers(&vertex_buffer_descriptors)
             .bind_group_layouts(&bind_group_layouts)
-            .cull_mode(wgpu::CullMode::Back)
+            .cull_mode(if primitive_material.double_sided() {
+                wgpu::CullMode::None
+            } else {
+                wgpu::CullMode::Back
+            })
             .enable_depth_buffer(true)
             .primitive_topology(match primitive.mode() {
                 Mode::Points => PrimitiveTopology::PointList,
@@ -69,15 +82,19 @@ impl Primitive {
             pipeline: pipeline::build_pipeline(engine, pipeline_descriptor),
             vertex_buffer,
             index_buffer,
-            uniforms_storage,
             num_elements: indices.len() as u32,
+            uniforms_storage,
+            material,
         }
     }
 
     pub fn render(&self, context: &mut ModelRenderContext, data: &ModelRenderData) {
         // Update uniforms buffer
-        self.uniforms_storage
-            .copy_to_gpu(context.device, &mut context.encoder, &data.into());
+        self.uniforms_storage.copy_to_gpu(
+            context.device,
+            &mut context.encoder,
+            &Uniforms::new(data, &self.material),
+        );
 
         // Render
         let mut render_pass = context.begin_draw();
@@ -186,13 +203,25 @@ impl Vertex {
     }
 }
 
+struct Material {
+    base_color: Vector4,
+    metallic_factor: f32,
+}
+
 #[derive(Debug, Copy, Clone)]
 struct Uniforms {
+    // 16 byte properties
     view_projection_matrix: Matrix4,
     model_matrix: Matrix4,
     eye_position: Vector4,
+    base_color: Vector4,
+
+    // 4 byte properties
     number_of_lights: u32,
-    _padding: [u32; 3],
+    metallic_factor: f32,
+
+    // Pad to 16 byte stride
+    _padding: [f32; 2],
 }
 
 impl Default for Uniforms {
@@ -201,19 +230,23 @@ impl Default for Uniforms {
             view_projection_matrix: cgmath::SquareMatrix::identity(),
             model_matrix: cgmath::SquareMatrix::identity(),
             eye_position: (0.0, 0.0, 0.0, 1.0).into(),
+            base_color: (1.0, 1.0, 1.0, 1.0).into(),
             number_of_lights: 0,
-            _padding: [0xcc, 0xcc, 0xcc],
+            metallic_factor: 1.0,
+            _padding: [1234.5678, 1234.5678],
         }
     }
 }
 
-impl From<&ModelRenderData<'_>> for Uniforms {
-    fn from(data: &ModelRenderData) -> Self {
+impl Uniforms {
+    fn new(render_data: &ModelRenderData, material: &Material) -> Self {
         Self {
-            view_projection_matrix: data.view_projection_matrix.clone(),
-            model_matrix: data.model_matrix.clone(),
-            eye_position: data.eye_position.to_homogeneous(),
-            number_of_lights: data.number_of_lights,
+            view_projection_matrix: render_data.view_projection_matrix.clone(),
+            model_matrix: render_data.model_matrix.clone(),
+            eye_position: render_data.eye_position.to_homogeneous(),
+            base_color: material.base_color,
+            number_of_lights: render_data.number_of_lights,
+            metallic_factor: material.metallic_factor,
             ..Default::default()
         }
     }

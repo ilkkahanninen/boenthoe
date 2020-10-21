@@ -13,7 +13,9 @@ layout(set=0, binding=0) uniform Uniforms {
     mat4 u_view_proj_matrix;
     mat4 u_model_matrix;
     vec4 u_eye_position;
+    vec4 u_base_color;
     uint u_number_of_lights;
+    float u_metallic_factor;
 };
 
 // Outputs to fragment shader

@@ -4,19 +4,19 @@ use crate::engine::prelude::*;
 pub enum Light {
     Unlit,
     Ambient {
-        color: Vector3,
+        color: Vector4,
     },
     Directional {
         direction: Vector3,
 
-        ambient: Vector3,
+        ambient: Vector4,
         diffuse: Vector3,
         specular: Vector3,
     },
     Point {
         position: Point3,
 
-        ambient: Vector3,
+        ambient: Vector4,
         diffuse: Vector3,
         specular: Vector3,
 
@@ -26,7 +26,7 @@ pub enum Light {
         position: Point3,
         look_at: Point3,
 
-        ambient: Vector3,
+        ambient: Vector4,
         diffuse: Vector3,
         specular: Vector3,
 
@@ -39,25 +39,25 @@ impl Light {
     pub fn is_lit(&self) -> bool {
         match self {
             Self::Unlit => false,
-            Self::Ambient { color } => is_nonblack(color),
+            Self::Ambient { color } => is_nonblack_rgba(color),
             Self::Directional {
                 ambient,
                 diffuse,
                 specular,
                 ..
-            } => is_nonblack(ambient) || is_nonblack(diffuse) || is_nonblack(specular),
+            } => is_nonblack_rgba(ambient) || is_nonblack(diffuse) || is_nonblack(specular),
             Self::Point {
                 ambient,
                 diffuse,
                 specular,
                 ..
-            } => is_nonblack(ambient) || is_nonblack(diffuse) || is_nonblack(specular),
+            } => is_nonblack_rgba(ambient) || is_nonblack(diffuse) || is_nonblack(specular),
             Self::Spotlight {
                 ambient,
                 diffuse,
                 specular,
                 ..
-            } => is_nonblack(ambient) || is_nonblack(diffuse) || is_nonblack(specular),
+            } => is_nonblack_rgba(ambient) || is_nonblack(diffuse) || is_nonblack(specular),
         }
     }
 }
@@ -108,7 +108,7 @@ impl From<&Light> for LightBufferObject {
             Light::Unlit => Self::default(),
             Light::Ambient { color } => Self {
                 light_type: LightType::Ambient.into(),
-                ambient: rgba_color(color),
+                ambient: *color,
                 ..Default::default()
             },
             Light::Directional {
@@ -119,7 +119,7 @@ impl From<&Light> for LightBufferObject {
             } => Self {
                 light_type: LightType::Directional.into(),
                 direction: homogeneous_direction(direction),
-                ambient: rgba_color(ambient),
+                ambient: *ambient,
                 diffuse: rgba_color(diffuse),
                 specular: rgba_color(specular),
                 ..Default::default()
@@ -133,7 +133,7 @@ impl From<&Light> for LightBufferObject {
             } => Self {
                 light_type: LightType::Point.into(),
                 position: position.to_homogeneous(),
-                ambient: rgba_color(ambient),
+                ambient: *ambient,
                 diffuse: rgba_color(diffuse),
                 specular: rgba_color(specular),
                 parameters: Vector4::new(*range, 1.0, 4.5 / range, 75.0 / (range * range)),
@@ -156,7 +156,7 @@ impl From<&Light> for LightBufferObject {
                     light_type: LightType::Spotlight.into(),
                     position: position.to_homogeneous(),
                     direction: homogeneous_direction(&(look_at - position)),
-                    ambient: rgba_color(ambient),
+                    ambient: *ambient,
                     diffuse: rgba_color(diffuse),
                     specular: rgba_color(specular),
                     parameters: Vector4::new(inner_angle.cos(), outer_angle.cos(), 0.0, 0.0),
@@ -192,6 +192,10 @@ fn rgba_color(rgb: &Vector3) -> Vector4 {
 
 fn is_nonblack(rgb: &Vector3) -> bool {
     rgb.x != 0.0 && rgb.y != 0.0 && rgb.z != 0.0
+}
+
+fn is_nonblack_rgba(rgba: &Vector4) -> bool {
+    rgba.x != 0.0 && rgba.y != 0.0 && rgba.z != 0.0 && rgba.w != 0.0
 }
 
 #[derive(Debug, Copy, Clone)]

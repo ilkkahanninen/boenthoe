@@ -16,7 +16,9 @@ layout(set=0, binding=0) uniform Uniforms {
     mat4 u_view_proj_matrix;
     mat4 u_model_matrix;
     vec4 u_eye_position;
+    vec4 u_base_color;
     uint u_number_of_lights;
+    float u_metallic_factor;
 };
 
 // Bind group, index 1.0: Lights
@@ -39,14 +41,13 @@ layout(location=0) out vec4 out_color;
 vec4 phong_model(
     Light light,
     vec3 light_dir,
-    float attenuation,
-    float ambient_strength,
-    float specular_strength
+    float attenuation
 ) {
+    float specular_strength = u_metallic_factor;
     vec3 norm = normalize(a_normal);
 
     // Ambient light
-    vec3 ambient = ambient_strength * light.ambient.rgb;
+    vec3 ambient = light.ambient.a * light.ambient.rgb;
 
     // Diffuse light
     float diff = max(dot(norm, light_dir), 0.0);
@@ -59,8 +60,8 @@ vec4 phong_model(
     vec3 specular = specular_strength * spec * light.specular.rgb;
 
     // Mix lights
-    vec3 result = (ambient + diffuse + specular) * attenuation * a_color.rgb;
-    return vec4(result, a_color.a);
+    vec3 light_result = (ambient + diffuse + specular) * attenuation * a_color.rgb;
+    return vec4(light_result, a_color.a) * u_base_color;
 }
 
 vec4 calculate_light(Light light) {
@@ -72,26 +73,24 @@ vec4 calculate_light(Light light) {
             return phong_model(
                 light,
                 normalize(-light.direction.xyz),
-                1.0,
-                0.1,
-                0.5
+                1.0
             );
 
         case 2: // Point
             vec3 light_vec = light.position.xyz - a_position;
+
             float distance = length(light_vec);
             if (distance > light.parameters.x) {
                 return vec4(0.0, 0.0, 0.0, 1.0);
             }
+
             return phong_model(
                 light,
                 normalize(light_vec),
                 1.0 / (
                     light.parameters.y +
                     light.parameters.z * distance +
-                    light.parameters.w * distance * distance),
-                0.1,
-                0.5
+                    light.parameters.w * distance * distance)
             );
 
         case 3: // Spotlight
@@ -106,9 +105,7 @@ vec4 calculate_light(Light light) {
             return phong_model(
                 light,
                 light_dir,
-                intensity,
-                0.1,
-                0.5
+                intensity
             );
 
         case 4: // Ambient

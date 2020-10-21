@@ -82,7 +82,7 @@ impl GltfModel {
                 .map(|node| Node::new(engine, &node, &data))
                 .collect(),
             lights: Vec::new(),
-            lights_buffer: StorageBuffer::new(&engine.device, 16, "Lights"),
+            lights_buffer: StorageBuffer::new(&engine.device, 16, "gltf::Lights"),
             camera,
         })
     }

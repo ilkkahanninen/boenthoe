@@ -57,19 +57,19 @@ impl Renderer for TestEffect {
         self.model.set_lighting(&[
             Light::Directional {
                 direction: (1.0, -1.0, -0.33).into(),
-                ambient: (0.0, 0.0, 0.0).into(),
+                ambient: (0.0, 0.0, 0.0, 0.0).into(),
                 diffuse: (1.0, 0.0, 1.0).into(),
                 specular: (1.0, 1.0, 1.0).into(),
             },
             Light::Directional {
                 direction: (-1.0, -1.0, 0.33).into(),
-                ambient: (0.0, 0.0, 0.0).into(),
+                ambient: (0.0, 0.0, 1.0, 0.1).into(),
                 diffuse: (0.0, 1.0, 1.0).into(),
                 specular: (1.0, 1.0, 1.0).into(),
             },
             Light::Point {
                 position: (0.0, time.sin() * 3.0, time.cos() * 3.0).into(),
-                ambient: (0.0, 0.0, 0.2).into(),
+                ambient: (0.0, 0.0, 0.0, 0.0).into(),
                 diffuse: (0.0, 0.0, 1.0).into(),
                 specular: (1.0, 1.0, 1.0).into(),
                 range: 10.0,
@@ -82,7 +82,7 @@ impl Renderer for TestEffect {
                 )
                     .into(),
                 look_at: (0.0, 1.0, 0.0).into(),
-                ambient: (0.0, 0.0, 0.1).into(),
+                ambient: (0.0, 0.0, 0.0, 0.0).into(),
                 diffuse: (1.0, 0.9, 0.5).into(),
                 specular: (1.0, 1.0, 0.5).into(),
                 angle: cgmath::Deg(10.0),
