@@ -19,6 +19,7 @@ vec4 phong_model(
 ) {
     float specular_strength = u_metallic_factor;
     vec3 norm = normalize(a_normal);
+    vec4 model_base_color = u_base_color * texture(sampler2D(t_base_color, s_base_color), a_tex_coords);
 
     // Ambient light
     vec3 ambient = light.ambient.a * light.ambient.rgb;
@@ -35,7 +36,7 @@ vec4 phong_model(
 
     // Mix lights
     vec3 light_result = (ambient + diffuse + specular) * attenuation * a_color.rgb;
-    return vec4(light_result, a_color.a) * u_base_color;
+    return vec4(light_result, a_color.a) * model_base_color;
 }
 
 vec4 calculate_light(Light light) {

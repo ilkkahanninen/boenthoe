@@ -1,6 +1,7 @@
 mod data;
 mod node;
 mod primitive;
+mod texture;
 
 use super::{Model, ModelProperties, ModelRenderContext};
 use crate::engine::{camera::Camera, prelude::*};
@@ -63,10 +64,10 @@ impl GltfModel {
         source: &Asset,
         options: &ModelProperties,
     ) -> Result<Self, EngineError> {
-        let (gltf, buffers, _images) = gltf::import_slice(source.data()?)
+        let (gltf, buffers, images) = gltf::import_slice(source.data()?)
             .or_else(|error| Err(EngineError::parse_error(source, error)))?;
 
-        let data = data::InitData::load(engine, &buffers, options)?;
+        let data = data::InitData::load(engine, &buffers, &images, options)?;
 
         let scene = gltf
             .default_scene()
