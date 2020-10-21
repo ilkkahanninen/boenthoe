@@ -111,6 +111,9 @@ vec4 calculate_light(Light light) {
                 0.5
             );
 
+        case 4: // Ambient
+            return vec4(0.1 * light.ambient.rgb, 1.0);
+
         default:
             return vec4(1.0, 0.0, 0.0, 1.0);
     }

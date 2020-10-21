@@ -3,6 +3,9 @@ use crate::engine::prelude::*;
 #[derive(Debug, Copy, Clone)]
 pub enum Light {
     Unlit,
+    Ambient {
+        color: Vector3,
+    },
     Directional {
         direction: Vector3,
 
@@ -36,6 +39,7 @@ impl Light {
     pub fn is_lit(&self) -> bool {
         match self {
             Self::Unlit => false,
+            Self::Ambient { color } => is_nonblack(color),
             Self::Directional {
                 ambient,
                 diffuse,
@@ -64,6 +68,7 @@ enum LightType {
     Directional,
     Point,
     Spotlight,
+    Ambient,
 }
 
 impl Into<u32> for LightType {
@@ -73,6 +78,7 @@ impl Into<u32> for LightType {
             Self::Directional => 1,
             Self::Point => 2,
             Self::Spotlight => 3,
+            Self::Ambient => 4,
         }
     }
 }
@@ -100,6 +106,11 @@ impl From<&Light> for LightBufferObject {
     fn from(light: &Light) -> Self {
         match light {
             Light::Unlit => Self::default(),
+            Light::Ambient { color } => Self {
+                light_type: LightType::Ambient.into(),
+                ambient: rgba_color(color),
+                ..Default::default()
+            },
             Light::Directional {
                 direction,
                 ambient,
