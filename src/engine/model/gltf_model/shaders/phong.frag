@@ -66,7 +66,7 @@ vec4 phong_model(
 vec4 calculate_light(Light light) {
     switch (light.type) {
         case 0: // Unlit
-            return vec4(0.0);
+            return vec4(0.0, 0.0, 0.0, 1.0);
 
         case 1: // Directional
             return phong_model(
@@ -80,13 +80,16 @@ vec4 calculate_light(Light light) {
         case 2: // Point
             vec3 light_vec = light.position.xyz - a_position;
             float distance = length(light_vec);
+            if (distance > light.parameters.x) {
+                return vec4(0.0, 0.0, 0.0, 1.0);
+            }
             return phong_model(
                 light,
                 normalize(light_vec),
                 1.0 / (
-                    light.parameters.x +
-                    light.parameters.y * distance +
-                    light.parameters.z * distance * distance),
+                    light.parameters.y +
+                    light.parameters.z * distance +
+                    light.parameters.w * distance * distance),
                 0.1,
                 0.5
             );
@@ -109,7 +112,7 @@ vec4 calculate_light(Light light) {
             );
 
         default:
-            return vec4(1.0, 0.0, 0.0, 0.0);
+            return vec4(1.0, 0.0, 0.0, 1.0);
     }
 }
 

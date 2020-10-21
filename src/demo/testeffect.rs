@@ -72,9 +72,7 @@ impl Renderer for TestEffect {
                 ambient: (0.0, 0.0, 0.2).into(),
                 diffuse: (0.0, 0.0, 1.0).into(),
                 specular: (1.0, 1.0, 1.0).into(),
-                constant: 1.0,
-                linear: 0.35,
-                quadrant: 0.44,
+                range: 10.0,
             },
             Light::Spotlight {
                 position: (

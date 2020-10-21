@@ -17,9 +17,7 @@ pub enum Light {
         diffuse: Vector3,
         specular: Vector3,
 
-        constant: f32,
-        linear: f32,
-        quadrant: f32,
+        range: f32,
     },
     Spotlight {
         position: Point3,
@@ -120,16 +118,14 @@ impl From<&Light> for LightBufferObject {
                 ambient,
                 diffuse,
                 specular,
-                constant,
-                linear,
-                quadrant,
+                range,
             } => Self {
                 light_type: LightType::Point.into(),
                 position: position.to_homogeneous(),
                 ambient: rgba_color(ambient),
                 diffuse: rgba_color(diffuse),
                 specular: rgba_color(specular),
-                parameters: Vector4::new(*constant, *linear, *quadrant, 0.0),
+                parameters: Vector4::new(*range, 1.0, 4.5 / range, 75.0 / (range * range)),
                 ..Default::default()
             },
             Light::Spotlight {
