@@ -1,3 +1,5 @@
+#![feature(vec_into_raw_parts)]
+
 #[macro_use]
 extern crate typed_builder;
 

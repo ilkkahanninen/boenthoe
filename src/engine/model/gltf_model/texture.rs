@@ -29,20 +29,12 @@ impl GltfTexture {
     pub fn build(engine: &Engine, data: &gltf::image::Data) -> Self {
         let format = FormatDescriptor::from(data.format);
 
-        let realigned_pixels = if format.source_size != format.target_size {
-            let mut pixels =
-                Vec::with_capacity(data.pixels.len() / format.source_size * format.target_size);
-            let pad_size = format.target_size - format.source_size;
-            let pad_at = format.source_size - 1;
-            for (index, pixel) in data.pixels.iter().enumerate() {
-                pixels.push(*pixel);
-                if index % format.source_size == pad_at {
-                    for _ in 0..pad_size {
-                        pixels.push(0xff);
-                    }
-                }
-            }
-            Some(pixels)
+        let pixels_with_padding = if format.source_size != format.target_size {
+            Some(pad_data(
+                &data.pixels,
+                format.source_size,
+                format.target_size,
+            ))
         } else {
             None
         };
@@ -69,7 +61,7 @@ impl GltfTexture {
         let buffer = engine
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                contents: realigned_pixels.as_ref().unwrap_or(&data.pixels),
+                contents: pixels_with_padding.as_ref().unwrap_or(&data.pixels),
                 usage: wgpu::BufferUsage::COPY_SRC,
                 label: Some("gltf::texture::Buffer"),
             });
@@ -157,4 +149,24 @@ impl From<Format> for FormatDescriptor {
             },
         }
     }
+}
+
+fn pad_data(data: &[u8], source_item_size: usize, target_item_size: usize) -> Vec<u8> {
+    assert!(source_item_size < target_item_size);
+    let item_count = data.len() / source_item_size;
+    let result = vec![0xff; item_count * target_item_size].into_raw_parts();
+    let mut i = 0;
+    while i < item_count {
+        let sp = i * source_item_size;
+        let tp = i * target_item_size;
+        i += 1;
+        unsafe {
+            std::ptr::copy_nonoverlapping(
+                &data[sp],
+                result.0.offset(tp as isize),
+                source_item_size,
+            );
+        }
+    }
+    unsafe { Vec::from_raw_parts(result.0, result.1, result.2) }
 }
