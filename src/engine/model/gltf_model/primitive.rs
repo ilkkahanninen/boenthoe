@@ -44,7 +44,7 @@ impl Primitive {
         let pbr_model = primitive_material.pbr_metallic_roughness();
         let material = Material {
             base_color: pbr_model.base_color_factor().into(),
-            textures: data.create_texture_bind_group(engine, &pbr_model),
+            textures: data.create_texture_bind_group(engine, &primitive_material),
             metallic_factor: pbr_model.metallic_factor(),
         };
 

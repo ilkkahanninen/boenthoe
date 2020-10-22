@@ -12,7 +12,7 @@ impl TestEffect {
     pub fn attach(engine: &Engine) -> Result<(), EngineError> {
         let model = model::load(
             engine,
-            &engine.load_asset(&Path::new("assets/Duck.glb")),
+            &engine.load_asset(&Path::new("assets/WaterBottle.glb")),
             &model::ModelProperties::default(),
         )?;
         let script = scripts::build(&engine.load_asset(&Path::new("assets/camerajump.boe")))?;
@@ -42,15 +42,15 @@ impl Renderer for TestEffect {
         let time = ctx.time as f32;
         self.script.set_time(ctx.time);
         self.camera.eye = (
-            time.sin() * 4.0,
-            (time * 2.7).sin() + 1.0,
-            time.cos() * 4.0
+            time.sin() * 0.5,
+            (time * 0.7).sin() * 0.1,
+            time.cos() * 0.5
             // self.script.get("eye_x").to_f() as f32,
             // self.script.get("eye_y").to_f() as f32,
             // self.script.get("eye_z").to_f() as f32,
         )
             .into();
-        self.camera.target.y = 1.0;
+        // self.camera.target.y = 1.0;
 
         self.model.set_camera(&self.camera);
 

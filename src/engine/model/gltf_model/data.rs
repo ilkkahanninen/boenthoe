@@ -9,6 +9,7 @@ pub struct InitData<'a> {
     pub fragment_shader: wgpu::ShaderModule,
 
     default_base_color_texture: GltfTexture,
+    default_normal_map: GltfTexture,
 }
 
 impl<'a> InitData<'a> {
@@ -65,6 +66,22 @@ impl<'a> InitData<'a> {
                             ty: wgpu::BindingType::Sampler { comparison: false },
                             count: None,
                         },
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 2,
+                            visibility: wgpu::ShaderStage::FRAGMENT,
+                            ty: wgpu::BindingType::SampledTexture {
+                                multisampled: false,
+                                dimension: wgpu::TextureViewDimension::D2,
+                                component_type: wgpu::TextureComponentType::Uint,
+                            },
+                            count: None,
+                        },
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 3,
+                            visibility: wgpu::ShaderStage::FRAGMENT,
+                            ty: wgpu::BindingType::Sampler { comparison: false },
+                            count: None,
+                        },
                     ],
                 });
 
@@ -76,18 +93,30 @@ impl<'a> InitData<'a> {
             fragment_shader,
 
             default_base_color_texture: GltfTexture::build_solid(engine, &[0xff, 0xff, 0xff, 0xff]),
+            default_normal_map: GltfTexture::build_solid(engine, &[0x00, 0x00, 0xff, 0x00]),
         })
     }
 
     pub fn create_texture_bind_group(
         &self,
         engine: &Engine,
-        pbr: &gltf::material::PbrMetallicRoughness,
+        material: &gltf::material::Material,
     ) -> wgpu::BindGroup {
         let (base_color_texture, base_color_sampler) = self.get_texture_and_sampler(
             engine,
-            pbr.base_color_texture(),
+            material
+                .pbr_metallic_roughness()
+                .base_color_texture()
+                .map(|info| info.texture()),
             &self.default_base_color_texture,
+        );
+
+        let (normal_map_texture, normal_map_sampler) = self.get_texture_and_sampler(
+            engine,
+            material
+                .normal_texture()
+                .map(|normal_texture| normal_texture.texture()),
+            &self.default_normal_map,
         );
 
         engine.device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -102,6 +131,14 @@ impl<'a> InitData<'a> {
                     binding: 1,
                     resource: wgpu::BindingResource::Sampler(&base_color_sampler),
                 },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(&normal_map_texture.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: wgpu::BindingResource::Sampler(&normal_map_sampler),
+                },
             ],
         })
     }
@@ -109,7 +146,7 @@ impl<'a> InitData<'a> {
     fn get_texture_and_sampler<'b>(
         &'b self,
         engine: &Engine,
-        info: Option<gltf::texture::Info>,
+        gltf_texture: Option<gltf::texture::Texture>,
         default: &'b GltfTexture,
     ) -> (&'b GltfTexture, wgpu::Sampler) {
         fn wrapping_mode_to_address_mode(wrap: gltf::texture::WrappingMode) -> wgpu::AddressMode {
@@ -120,9 +157,9 @@ impl<'a> InitData<'a> {
             }
         }
 
-        let (texture, sampler_desc) = if let Some(info) = info {
-            let texture = self.textures.get(info.texture().index()).unwrap();
-            let sampler_spec = info.texture().sampler();
+        let (texture, sampler_desc) = if let Some(gltf_texture) = gltf_texture {
+            let texture = self.textures.get(gltf_texture.index()).unwrap();
+            let sampler_spec = gltf_texture.sampler();
             let sampler = wgpu::SamplerDescriptor {
                 address_mode_u: wrapping_mode_to_address_mode(sampler_spec.wrap_s()),
                 address_mode_v: wrapping_mode_to_address_mode(sampler_spec.wrap_t()),

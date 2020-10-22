@@ -26,7 +26,9 @@ layout(set=1, binding=0) buffer Lights {
     Light u_lights[];
 };
 
-// Base color texture
+// Textures
 
 layout(set = 2, binding = 0) uniform texture2D t_base_color;
 layout(set = 2, binding = 1) uniform sampler s_base_color;
+layout(set = 2, binding = 2) uniform texture2D t_normal_map;
+layout(set = 2, binding = 3) uniform sampler s_normal_map;
