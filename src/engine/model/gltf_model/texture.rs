@@ -8,6 +8,24 @@ pub struct GltfTexture {
 }
 
 impl GltfTexture {
+    pub fn build_solid(engine: &Engine, data: &[u8; 4]) -> Self {
+        let size = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as usize;
+        let mut pixels = vec![0; size];
+        for i in 0..size {
+            pixels[i] = data[i % 4];
+        }
+
+        Self::build(
+            engine,
+            &gltf::image::Data {
+                format: gltf::image::Format::R8G8B8A8,
+                pixels,
+                width: size as u32 / 4,
+                height: 1,
+            },
+        )
+    }
+
     pub fn build(engine: &Engine, data: &gltf::image::Data) -> Self {
         let format = FormatDescriptor::from(data.format);
 
@@ -82,6 +100,7 @@ impl GltfTexture {
         Self { texture, view }
     }
 }
+
 struct FormatDescriptor {
     wgpu_format: wgpu::TextureFormat,
     source_size: usize,

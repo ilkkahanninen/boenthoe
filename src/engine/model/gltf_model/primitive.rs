@@ -42,9 +42,9 @@ impl Primitive {
         // Material
         let primitive_material = primitive.material();
         let pbr_model = primitive_material.pbr_metallic_roughness();
-        let mut material = Material {
+        let material = Material {
             base_color: pbr_model.base_color_factor().into(),
-            base_color_texture: None,
+            textures: data.create_texture_bind_group(engine, &pbr_model),
             metallic_factor: pbr_model.metallic_factor(),
         };
 
@@ -52,88 +52,11 @@ impl Primitive {
         let uniforms_storage = UniformBuffer::default(&engine.device, "gltf::Uniforms");
         let light_layout =
             StorageBuffer::<LightBufferObject>::create_layout(&engine.device, "gltf::Lights");
-        let mut bind_group_layouts = vec![uniforms_storage.get_layout(), &light_layout];
-
-        // Diffuse texture, TODO: Move all this stuff to GltfTexture function
-        let diffuse_layout = pbr_model.base_color_texture().map(|info| {
-            let texture = data.textures.get(info.texture().index()).unwrap();
-            let sampler_spec = info.texture().sampler();
-
-            let sampler = engine.device.create_sampler(&wgpu::SamplerDescriptor {
-                address_mode_u: match sampler_spec.wrap_s() {
-                    gltf::texture::WrappingMode::ClampToEdge => wgpu::AddressMode::ClampToEdge,
-                    gltf::texture::WrappingMode::MirroredRepeat => wgpu::AddressMode::MirrorRepeat,
-                    gltf::texture::WrappingMode::Repeat => wgpu::AddressMode::Repeat,
-                },
-                address_mode_v: match sampler_spec.wrap_t() {
-                    gltf::texture::WrappingMode::ClampToEdge => wgpu::AddressMode::ClampToEdge,
-                    gltf::texture::WrappingMode::MirroredRepeat => wgpu::AddressMode::MirrorRepeat,
-                    gltf::texture::WrappingMode::Repeat => wgpu::AddressMode::Repeat,
-                },
-                address_mode_w: wgpu::AddressMode::ClampToEdge,
-                mag_filter: match sampler_spec.mag_filter() {
-                    Some(gltf::texture::MagFilter::Nearest) => wgpu::FilterMode::Nearest,
-                    _ => wgpu::FilterMode::Linear,
-                },
-                min_filter: match sampler_spec.mag_filter() {
-                    Some(gltf::texture::MagFilter::Linear) => wgpu::FilterMode::Linear,
-                    _ => wgpu::FilterMode::Nearest,
-                },
-                mipmap_filter: wgpu::FilterMode::Nearest,
-                lod_min_clamp: -100.0,
-                lod_max_clamp: 100.0,
-                compare: None,
-                anisotropy_clamp: None,
-                label: None,
-            });
-
-            let bind_group_layout =
-                engine
-                    .device
-                    .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                        label: None,
-                        entries: &[
-                            wgpu::BindGroupLayoutEntry {
-                                binding: 0,
-                                visibility: wgpu::ShaderStage::FRAGMENT,
-                                ty: wgpu::BindingType::SampledTexture {
-                                    multisampled: false,
-                                    dimension: wgpu::TextureViewDimension::D2,
-                                    component_type: wgpu::TextureComponentType::Uint,
-                                },
-                                count: None,
-                            },
-                            wgpu::BindGroupLayoutEntry {
-                                binding: 1,
-                                visibility: wgpu::ShaderStage::FRAGMENT,
-                                ty: wgpu::BindingType::Sampler { comparison: false },
-                                count: None,
-                            },
-                        ],
-                    });
-
-            let bind_group = engine.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: None,
-                layout: &bind_group_layout,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: wgpu::BindingResource::TextureView(&texture.view),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::Sampler(&sampler),
-                    },
-                ],
-            });
-
-            material.base_color_texture = Some(bind_group);
-            bind_group_layout
-        });
-
-        if let Some(layout) = &diffuse_layout {
-            bind_group_layouts.push(layout)
-        }
+        let bind_group_layouts = [
+            uniforms_storage.get_layout(),
+            &light_layout,
+            &data.textures_bind_group_layout,
+        ];
 
         // Render pipeline
         let label = format!("{}::pipeline", &label);
@@ -182,9 +105,7 @@ impl Primitive {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, self.uniforms_storage.get_bind_group(), &[]);
         render_pass.set_bind_group(1, data.lights, &[]);
-        if let Some(base_color_texture) = &self.material.base_color_texture {
-            render_pass.set_bind_group(2, base_color_texture, &[]);
-        }
+        render_pass.set_bind_group(2, &self.material.textures, &[]);
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.set_index_buffer(self.index_buffer.slice(..));
         render_pass.draw_indexed(0..self.num_elements, 0, 0..1);
@@ -289,7 +210,7 @@ impl Vertex {
 
 struct Material {
     base_color: Vector4,
-    base_color_texture: Option<wgpu::BindGroup>,
+    textures: wgpu::BindGroup,
     metallic_factor: f32,
 }
 
