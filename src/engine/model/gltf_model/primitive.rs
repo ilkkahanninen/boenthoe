@@ -119,6 +119,7 @@ struct Vertex {
     normal: [f32; 3],
     tex_coord: [f32; 2],
     color: [f32; 4],
+    tangent: [f32; 4],
 }
 
 unsafe impl bytemuck::Pod for Vertex {}
@@ -131,6 +132,7 @@ impl Default for Vertex {
             normal: [0.0, 0.0, 0.0],
             tex_coord: [0.0, 0.0],
             color: [1.0, 1.0, 1.0, 1.0],
+            tangent: [0.0, 0.0, 0.0, 0.0],
         }
     }
 }
@@ -154,6 +156,12 @@ impl Vertex {
             if let Some(normals) = reader.read_normals() {
                 for (index, normal) in normals.enumerate() {
                     buf[index].normal = normal;
+                }
+            }
+
+            if let Some(tangents) = reader.read_tangents() {
+                for (index, tangent) in tangents.enumerate() {
+                    buf[index].tangent = tangent;
                 }
             }
 
@@ -201,6 +209,12 @@ impl Vertex {
                 wgpu::VertexAttributeDescriptor {
                     offset: mem::size_of::<[f32; 8]>() as wgpu::BufferAddress,
                     shader_location: 3,
+                    format: wgpu::VertexFormat::Float4,
+                },
+                // tangent
+                wgpu::VertexAttributeDescriptor {
+                    offset: mem::size_of::<[f32; 12]>() as wgpu::BufferAddress,
+                    shader_location: 4,
                     format: wgpu::VertexFormat::Float4,
                 },
             ],
