@@ -42,9 +42,9 @@ impl Renderer for TestEffect {
         let time = ctx.time as f32;
         self.script.set_time(ctx.time);
         self.camera.eye = (
-            time.sin() * 0.5,
-            (time * 0.7).sin() * 0.1,
-            time.cos() * 0.5
+            time.sin() * 0.2,
+            (time * 0.7).sin() * 0.1 - 0.1,
+            time.cos() * 0.2
             // self.script.get("eye_x").to_f() as f32,
             // self.script.get("eye_y").to_f() as f32,
             // self.script.get("eye_z").to_f() as f32,

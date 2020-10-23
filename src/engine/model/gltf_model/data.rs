@@ -10,6 +10,7 @@ pub struct InitData<'a> {
 
     default_base_color_texture: GltfTexture,
     default_normal_map: GltfTexture,
+    default_emissive_texture: GltfTexture,
 }
 
 impl<'a> InitData<'a> {
@@ -82,6 +83,22 @@ impl<'a> InitData<'a> {
                             ty: wgpu::BindingType::Sampler { comparison: false },
                             count: None,
                         },
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 4,
+                            visibility: wgpu::ShaderStage::FRAGMENT,
+                            ty: wgpu::BindingType::SampledTexture {
+                                multisampled: false,
+                                dimension: wgpu::TextureViewDimension::D2,
+                                component_type: wgpu::TextureComponentType::Uint,
+                            },
+                            count: None,
+                        },
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 5,
+                            visibility: wgpu::ShaderStage::FRAGMENT,
+                            ty: wgpu::BindingType::Sampler { comparison: false },
+                            count: None,
+                        },
                     ],
                 });
 
@@ -94,6 +111,7 @@ impl<'a> InitData<'a> {
 
             default_base_color_texture: GltfTexture::build_solid(engine, &[0xff, 0xff, 0xff, 0xff]),
             default_normal_map: GltfTexture::build_solid(engine, &[0x00, 0x00, 0xff, 0x00]),
+            default_emissive_texture: GltfTexture::build_solid(engine, &[0x00, 0x00, 0x00, 0x00]),
         })
     }
 
@@ -119,6 +137,14 @@ impl<'a> InitData<'a> {
             &self.default_normal_map,
         );
 
+        let (emissive_texture, emissive_sampler) = self.get_texture_and_sampler(
+            engine,
+            material
+                .emissive_texture()
+                .map(|emissive_texture| emissive_texture.texture()),
+            &self.default_normal_map,
+        );
+
         engine.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: None,
             layout: &self.textures_bind_group_layout,
@@ -138,6 +164,14 @@ impl<'a> InitData<'a> {
                 wgpu::BindGroupEntry {
                     binding: 3,
                     resource: wgpu::BindingResource::Sampler(&normal_map_sampler),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 4,
+                    resource: wgpu::BindingResource::TextureView(&emissive_texture.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 5,
+                    resource: wgpu::BindingResource::Sampler(&emissive_sampler),
                 },
             ],
         })

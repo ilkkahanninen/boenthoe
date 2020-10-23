@@ -35,6 +35,8 @@ layout(set = 2, binding = 0) uniform texture2D t_base_color;
 layout(set = 2, binding = 1) uniform sampler s_base_color;
 layout(set = 2, binding = 2) uniform texture2D t_normal_map;
 layout(set = 2, binding = 3) uniform sampler s_normal_map;
+layout(set = 2, binding = 4) uniform texture2D t_emission;
+layout(set = 2, binding = 5) uniform sampler s_emission;
 
 // Vertex shader -> fragment shader data
 

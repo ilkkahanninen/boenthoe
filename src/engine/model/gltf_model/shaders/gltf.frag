@@ -41,8 +41,11 @@ vec4 lighting_model(
     float spec = pow(max(dot(view_dir, reflect_dir), 0.0), 32);
     vec3 specular = specular_strength * spec * light.specular.rgb;
 
+    // Emission
+    vec3 emission = texture(sampler2D(t_emission, s_emission), fs_in.tex_coords).rgb;
+
     // Mix lights
-    vec3 light_result = (ambient + diffuse + specular) * attenuation * fs_in.color.rgb;
+    vec3 light_result = (ambient + diffuse + specular) * attenuation * fs_in.color.rgb + emission;
     return vec4(light_result, fs_in.color.a) * model_base_color;
 }
 
