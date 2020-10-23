@@ -1,14 +1,14 @@
 // Bind group, index 0.0: Uniforms
 
 layout(set=0, binding=0) uniform Uniforms {
-    mat4 u_view_proj_matrix;
-    mat4 u_model_matrix;
-    vec4 u_eye_position;
-    vec4 u_base_color;
+    mat4 view_proj_matrix;
+    mat4 model_matrix;
+    vec4 eye_position;
+    vec4 base_color;
 
-    uint u_number_of_lights;
-    float u_metallic_factor;
-};
+    uint number_of_lights;
+    float metallic_factor;
+} uniforms;
 
 // Bind group, index 1.0: Lights
 
@@ -23,7 +23,7 @@ struct Light {
 };
 
 layout(set=1, binding=0) buffer Lights {
-    Light u_lights[];
+    Light lights[];
 };
 
 // Textures
@@ -32,3 +32,13 @@ layout(set = 2, binding = 0) uniform texture2D t_base_color;
 layout(set = 2, binding = 1) uniform sampler s_base_color;
 layout(set = 2, binding = 2) uniform texture2D t_normal_map;
 layout(set = 2, binding = 3) uniform sampler s_normal_map;
+
+// Vertex shader -> fragment shader data
+
+struct VS_OUT {
+    vec3 position;
+    vec3 normal;
+    vec2 tex_coords;
+    vec4 color;
+    mat3 tbn;
+};

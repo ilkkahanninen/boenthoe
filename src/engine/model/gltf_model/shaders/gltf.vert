@@ -11,25 +11,29 @@ layout(location=4) in vec4 a_tangent;
 
 // Outputs to fragment shader
 
-layout(location=0) out vec3 frag_position;
-layout(location=1) out vec3 frag_normal;
-layout(location=2) out vec2 frag_tex_coords;
-layout(location=3) out vec4 frag_color;
+layout(location=0) out VS_OUT vs_out;
 
 void main() {
     // Position
     vec4 model_space = vec4(a_position, 1.0);
-    vec4 world_space = u_model_matrix * model_space;
-    frag_position = vec3(world_space);
-    gl_Position = u_view_proj_matrix * world_space;
+    vec4 world_space = uniforms.model_matrix * model_space;
+    vs_out.position = vec3(world_space);
+    gl_Position = uniforms.view_proj_matrix * world_space;
 
     // Normal
     // TODO: Inverse is an expensive operation, calculate it on CPU and move it to uniforms
-    frag_normal = mat3(transpose(inverse(u_model_matrix))) * a_normal;
+    vs_out.normal = mat3(transpose(inverse(uniforms.model_matrix))) * a_normal;
 
     // Color
-    frag_color = a_color;
+    vs_out.color = a_color;
 
     // Texture coordinates
-    frag_tex_coords = a_tex_coords;
+    vs_out.tex_coords = a_tex_coords;
+
+    // Export inversed TBN matrix for normal mapping
+    vec3 N = normalize(vec3(uniforms.model_matrix * vec4(a_normal, 0.0)));
+    vec3 T = normalize(vec3(uniforms.model_matrix * vec4(a_tangent.xyz, 0.0)));
+    vec3 B = cross(N, T); // TODO: Precalc this
+
+    vs_out.tbn = transpose(mat3(T, B, N)); // transpose of an orthogonal matrix equals its inverse
 }
