@@ -57,7 +57,7 @@ pub mod prelude {
     pub use super::camera::Camera;
     pub use super::databuffers::{StorageBuffer, UniformBuffer};
     pub use super::engine::Engine;
-    pub use super::lights::{Light, LightBufferObject, LightingModel};
+    pub use super::lights::{Light, LightBufferObject};
     pub use super::object::Object;
     pub use super::renderer::{Renderer, RenderingContext};
     pub use super::shaders;

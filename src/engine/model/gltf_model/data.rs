@@ -24,9 +24,9 @@ impl<'a> InitData<'a> {
             include_bytes!("shaders/uniforms.glsl"),
         );
 
-        let phong_frag = engine.add_asset(
+        let fragment_shader = engine.add_asset(
             Path::new("gltf_model/shaders/gltf.frag"),
-            include_bytes!("shaders/phong.frag"),
+            include_bytes!("shaders/gltf.frag"),
         );
 
         let vertex_shader = shaders::build(
@@ -37,7 +37,7 @@ impl<'a> InitData<'a> {
             ),
         )?;
 
-        let fragment_shader = shaders::build(engine, &phong_frag)?;
+        let fragment_shader = shaders::build(engine, &fragment_shader)?;
 
         let textures = images
             .iter()

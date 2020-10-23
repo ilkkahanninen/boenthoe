@@ -197,14 +197,3 @@ fn is_nonblack(rgb: &Vector3) -> bool {
 fn is_nonblack_rgba(rgba: &Vector4) -> bool {
     rgba.x != 0.0 && rgba.y != 0.0 && rgba.z != 0.0 && rgba.w != 0.0
 }
-
-#[derive(Debug, Copy, Clone)]
-pub enum LightingModel {
-    Phong,
-}
-
-impl Default for LightingModel {
-    fn default() -> Self {
-        Self::Phong
-    }
-}

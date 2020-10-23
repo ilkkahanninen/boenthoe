@@ -8,7 +8,7 @@ layout(location=0) in VS_OUT fs_in;
 layout(location=0) out vec4 out_color;
 
 // Lighting
-vec4 phong_model(
+vec4 lighting_model(
     Light light,
     vec3 light_dir,
     float attenuation
@@ -41,7 +41,7 @@ vec4 calculate_light(Light light) {
             return vec4(0.0, 0.0, 0.0, 1.0);
 
         case 1: // Directional
-            return phong_model(
+            return lighting_model(
                 light,
                 normalize(-light.direction.xyz),
                 1.0
@@ -55,7 +55,7 @@ vec4 calculate_light(Light light) {
                 return vec4(0.0, 0.0, 0.0, 1.0);
             }
 
-            return phong_model(
+            return lighting_model(
                 light,
                 normalize(light_vec),
                 1.0 / (
@@ -73,7 +73,7 @@ vec4 calculate_light(Light light) {
             float epsilon = inner - outer;
             float intensity = clamp((theta - outer) / epsilon, 0.0, 1.0);
 
-            return phong_model(
+            return lighting_model(
                 light,
                 light_dir,
                 intensity

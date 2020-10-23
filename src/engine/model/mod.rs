@@ -16,7 +16,6 @@ pub fn load(
 
 #[derive(Debug, Default)]
 pub struct ModelProperties {
-    lighting_model: LightingModel,
     camera: Option<Camera>,
 }
 
