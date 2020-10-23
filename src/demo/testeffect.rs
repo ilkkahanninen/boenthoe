@@ -70,9 +70,9 @@ impl Renderer for TestEffect {
             Light::Point {
                 position: (0.0, time.sin() * 3.0, time.cos() * 3.0).into(),
                 ambient: (0.0, 0.0, 0.0, 0.0).into(),
-                diffuse: (0.0, 0.0, 1.0).into(),
+                diffuse: (1.0, 1.0, 1.0).into(),
                 specular: (1.0, 1.0, 1.0).into(),
-                range: 10.0,
+                range: 30.0,
             },
             Light::Spotlight {
                 position: (

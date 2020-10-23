@@ -1,3 +1,6 @@
+// Constants
+const uint MAX_NUMBER_OF_LIGHTS = 8;
+
 // Bind group, index 0.0: Uniforms
 
 layout(set=0, binding=0) uniform Uniforms {
@@ -40,5 +43,9 @@ struct VS_OUT {
     vec3 normal;
     vec2 tex_coords;
     vec4 color;
-    mat3 tbn;
+
+    vec3 tangent_position;
+    vec3 tangent_view_pos;
+    vec3 tangent_light_pos[MAX_NUMBER_OF_LIGHTS];
+    vec3 tangent_light_dir[MAX_NUMBER_OF_LIGHTS];
 };
