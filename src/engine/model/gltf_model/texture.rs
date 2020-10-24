@@ -8,7 +8,7 @@ pub struct GltfTexture {
 }
 
 impl GltfTexture {
-    pub fn build_solid(engine: &Engine, data: &[u8; 4]) -> Self {
+    pub fn build_solid(engine: &Engine, data: &[u8; 4], linear_colors: bool) -> Self {
         let size = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as usize;
         let mut pixels = vec![0; size];
         for i in 0..size {
@@ -23,11 +23,12 @@ impl GltfTexture {
                 width: size as u32 / 4,
                 height: 1,
             },
+            linear_colors,
         )
     }
 
-    pub fn build(engine: &Engine, data: &gltf::image::Data) -> Self {
-        let format = FormatDescriptor::from(data.format);
+    pub fn build(engine: &Engine, data: &gltf::image::Data, linear_colors: bool) -> Self {
+        let format = FormatDescriptor::from(data.format, linear_colors);
 
         let pixels_with_padding = if format.source_size != format.target_size {
             Some(pad_data(
@@ -99,8 +100,8 @@ struct FormatDescriptor {
     target_size: usize,
 }
 
-impl From<Format> for FormatDescriptor {
-    fn from(format: Format) -> Self {
+impl FormatDescriptor {
+    fn from(format: Format, linear_colors: bool) -> Self {
         match format {
             Format::R8 => Self {
                 wgpu_format: TextureFormat::R8Unorm,
@@ -113,17 +114,29 @@ impl From<Format> for FormatDescriptor {
                 target_size: 2,
             },
             Format::R8G8B8 => Self {
-                wgpu_format: TextureFormat::Rgba8UnormSrgb,
+                wgpu_format: if linear_colors {
+                    TextureFormat::Rgba8Unorm
+                } else {
+                    TextureFormat::Rgba8UnormSrgb
+                },
                 source_size: 3,
                 target_size: 4,
             },
             Format::R8G8B8A8 => Self {
-                wgpu_format: TextureFormat::Rgba8UnormSrgb,
+                wgpu_format: if linear_colors {
+                    TextureFormat::Rgba8Unorm
+                } else {
+                    TextureFormat::Rgba8UnormSrgb
+                },
                 source_size: 4,
                 target_size: 4,
             },
             Format::B8G8R8 | Format::B8G8R8A8 => Self {
-                wgpu_format: TextureFormat::Bgra8UnormSrgb,
+                wgpu_format: if linear_colors {
+                    TextureFormat::Bgra8Unorm
+                } else {
+                    TextureFormat::Bgra8UnormSrgb
+                },
                 source_size: 4,
                 target_size: 4,
             },
