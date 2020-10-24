@@ -37,6 +37,8 @@ layout(set = 2, binding = 2) uniform texture2D t_normal_map;
 layout(set = 2, binding = 3) uniform sampler s_normal_map;
 layout(set = 2, binding = 4) uniform texture2D t_emission;
 layout(set = 2, binding = 5) uniform sampler s_emission;
+layout(set = 2, binding = 6) uniform texture2D t_metallic_roughness;
+layout(set = 2, binding = 7) uniform sampler s_metallic_roughness;
 
 // Vertex shader -> fragment shader data
 

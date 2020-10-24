@@ -90,6 +90,22 @@ impl<'a> InitData<'a> {
                             ty: wgpu::BindingType::Sampler { comparison: false },
                             count: None,
                         },
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 6,
+                            visibility: wgpu::ShaderStage::FRAGMENT,
+                            ty: wgpu::BindingType::SampledTexture {
+                                multisampled: false,
+                                dimension: wgpu::TextureViewDimension::D2,
+                                component_type: wgpu::TextureComponentType::Uint,
+                            },
+                            count: None,
+                        },
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 7,
+                            visibility: wgpu::ShaderStage::FRAGMENT,
+                            ty: wgpu::BindingType::Sampler { comparison: false },
+                            count: None,
+                        },
                     ],
                 });
 
@@ -132,6 +148,16 @@ impl<'a> InitData<'a> {
             &TextureSpec::emissive_texture(),
         );
 
+        let (metallic_roughness_texture, metallic_roughness_sampler) = self
+            .build_texture_and_sampler(
+                engine,
+                material
+                    .pbr_metallic_roughness()
+                    .metallic_roughness_texture()
+                    .map(|mr_texture| mr_texture.texture()),
+                &TextureSpec::metallic_roughness_texture(),
+            );
+
         engine.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: None,
             layout: &self.textures_bind_group_layout,
@@ -159,6 +185,14 @@ impl<'a> InitData<'a> {
                 wgpu::BindGroupEntry {
                     binding: 5,
                     resource: wgpu::BindingResource::Sampler(&emissive_sampler),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 6,
+                    resource: wgpu::BindingResource::TextureView(&metallic_roughness_texture.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 7,
+                    resource: wgpu::BindingResource::Sampler(&metallic_roughness_sampler),
                 },
             ],
         })
@@ -258,6 +292,13 @@ impl TextureSpec {
     fn emissive_texture() -> Self {
         Self {
             linear_colors: false,
+            default_data: [0x00, 0x00, 0x00, 0x00],
+        }
+    }
+
+    fn metallic_roughness_texture() -> Self {
+        Self {
+            linear_colors: true,
             default_data: [0x00, 0x00, 0x00, 0x00],
         }
     }
