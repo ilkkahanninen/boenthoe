@@ -48,6 +48,8 @@ impl Window {
             size: _,
         } = self;
 
+        let mut options = options;
+
         engine.init();
         event_loop.run(move |event, _, control_flow| match event {
             Event::WindowEvent {
@@ -60,9 +62,13 @@ impl Window {
                         WindowEvent::KeyboardInput { input, .. } => match input {
                             KeyboardInput {
                                 state: ElementState::Pressed,
-                                virtual_keycode: Some(VirtualKeyCode::Escape),
+                                virtual_keycode,
                                 ..
-                            } => *control_flow = ControlFlow::Exit,
+                            } => match virtual_keycode {
+                                Some(VirtualKeyCode::Escape) => *control_flow = ControlFlow::Exit,
+                                Some(VirtualKeyCode::F) => options.print_fps = !options.print_fps,
+                                _ => {}
+                            },
 
                             _ => {}
                         },
