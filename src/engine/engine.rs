@@ -144,7 +144,9 @@ impl Engine {
         self.timer.reset();
     }
 
-    pub fn render(&mut self) {
+    /// Renders a frame and returns used time in seconds
+    pub fn render(&mut self) -> f64 {
+        let render_start_time = self.timer.elapsed();
         self.check_changed_files();
         self.process_ext_command_buffers();
 
@@ -176,6 +178,8 @@ impl Engine {
         }
 
         self.queue.submit(vec![encoder.finish()]);
+
+        self.timer.elapsed() - render_start_time
     }
 
     fn forward(&mut self, seconds: f64) {

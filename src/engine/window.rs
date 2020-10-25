@@ -41,7 +41,7 @@ impl Window {
         }
     }
 
-    pub fn run(self, mut engine: engine::Engine) {
+    pub fn run(self, mut engine: engine::Engine, options: RunOptions) {
         let Window {
             window,
             event_loop,
@@ -72,7 +72,10 @@ impl Window {
             }
 
             Event::RedrawRequested(_) => {
-                engine.render();
+                let time = engine.render();
+                if options.print_fps {
+                    println!("FPS: {}", (1.0 / time).round());
+                }
             }
 
             Event::MainEventsCleared => {
@@ -82,4 +85,8 @@ impl Window {
             _ => {}
         });
     }
+}
+
+pub struct RunOptions {
+    pub print_fps: bool,
 }

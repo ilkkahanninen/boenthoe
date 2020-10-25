@@ -18,6 +18,7 @@ impl Timer {
         self.start_time = Instant::now();
     }
 
+    /// Returns elapsed time in seconds
     pub fn elapsed(&self) -> f64 {
         self.true_elapsed() + self.adjust
     }

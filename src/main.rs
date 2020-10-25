@@ -8,12 +8,14 @@ mod engine;
 
 struct Args {
     window: bool,
+    print_fps: bool,
 }
 
 fn main() {
     let mut args = pico_args::Arguments::from_env();
     let args = Args {
         window: args.contains(["-w", "--window"]),
+        print_fps: args.contains(["-f", "--fps"]),
     };
 
     let mut window = engine::window::Window::new(&engine::window::WindowProperties {
@@ -26,7 +28,12 @@ fn main() {
     });
 
     match demo::init(&mut window.window) {
-        Ok(engine) => window.run(engine),
+        Ok(engine) => window.run(
+            engine,
+            engine::window::RunOptions {
+                print_fps: args.print_fps,
+            },
+        ),
         Err(err) => panic!("Demo initialization failed:\n\n{:#?}", err),
     }
 }
