@@ -44,8 +44,12 @@ impl RenderingMode {
 
 pub trait Model {
     fn render(&self, context: &mut ModelRenderContext);
-    fn set_camera(&mut self, camera: &Camera);
-    fn set_lighting(&mut self, lights: &[Light]);
+
+    #[allow(unused_variables)]
+    fn set_camera(&mut self, camera: &Camera) {}
+
+    #[allow(unused_variables)]
+    fn set_lighting(&mut self, lights: &[Light]) {}
 }
 
 pub struct ModelRenderContext<'a> {

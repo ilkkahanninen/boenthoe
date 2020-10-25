@@ -1,5 +1,5 @@
 use super::{data::InitData, Matrix4, ModelRenderContext, ModelRenderData};
-use crate::engine::{pipeline, prelude::*};
+use crate::engine::prelude::*;
 use gltf::mesh::Mode;
 use wgpu::util::DeviceExt;
 use wgpu::PrimitiveTopology;

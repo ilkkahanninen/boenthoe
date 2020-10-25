@@ -4,6 +4,7 @@ use std::path::PathBuf;
 pub mod assets;
 pub mod camera;
 pub mod databuffers;
+pub mod effect_layer;
 pub mod engine;
 pub mod lights;
 pub mod model;
@@ -58,7 +59,9 @@ pub mod prelude {
     pub use super::databuffers::{StorageBuffer, UniformBuffer};
     pub use super::engine::Engine;
     pub use super::lights::{Light, LightBufferObject};
+    pub use super::model::{Model, ModelProperties, ModelRenderContext};
     pub use super::object::Object;
+    pub use super::pipeline;
     pub use super::renderer::{Renderer, RenderingContext};
     pub use super::shaders;
     pub use super::textures;
