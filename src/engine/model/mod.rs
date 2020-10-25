@@ -16,7 +16,8 @@ pub fn load(
 
 #[derive(Debug, Default)]
 pub struct ModelProperties {
-    camera: Option<Camera>,
+    pub camera: Option<Camera>,
+    pub physical_based_rendering: bool,
 }
 
 pub trait Model {

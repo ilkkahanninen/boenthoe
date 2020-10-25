@@ -13,7 +13,10 @@ impl TestEffect {
         let model = model::load(
             engine,
             &engine.load_asset(&Path::new("assets/WaterBottle.glb")),
-            &model::ModelProperties::default(),
+            &model::ModelProperties {
+                physical_based_rendering: true,
+                ..Default::default()
+            },
         )?;
         let script = scripts::build(&engine.load_asset(&Path::new("assets/camerajump.boe")))?;
         let depth_buffer = textures::depth_buffer(engine);

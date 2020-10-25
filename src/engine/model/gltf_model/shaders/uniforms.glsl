@@ -1,5 +1,6 @@
 // Constants
 const uint MAX_NUMBER_OF_LIGHTS = 8;
+const float PI = 3.14159265359;
 
 // Bind group, index 0.0: Uniforms
 
@@ -11,6 +12,7 @@ layout(set=0, binding=0) uniform Uniforms {
 
     uint number_of_lights;
     float metallic_factor;
+    float roughness_factor;
 } uniforms;
 
 // Bind group, index 1.0: Lights
@@ -37,8 +39,8 @@ layout(set = 2, binding = 2) uniform texture2D t_normal_map;
 layout(set = 2, binding = 3) uniform sampler s_normal_map;
 layout(set = 2, binding = 4) uniform texture2D t_emission;
 layout(set = 2, binding = 5) uniform sampler s_emission;
-layout(set = 2, binding = 6) uniform texture2D t_metallic_roughness;
-layout(set = 2, binding = 7) uniform sampler s_metallic_roughness;
+layout(set = 2, binding = 6) uniform texture2D t_pbr;
+layout(set = 2, binding = 7) uniform sampler s_pbr;
 
 // Vertex shader -> fragment shader data
 

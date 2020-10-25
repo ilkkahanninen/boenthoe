@@ -14,16 +14,16 @@ impl<'a> InitData<'a> {
         engine: &Engine,
         buffers: &'a Vec<gltf::buffer::Data>,
         images: &'a Vec<gltf::image::Data>,
-        _options: &ModelProperties,
+        options: &ModelProperties,
     ) -> Result<Self, EngineError> {
         engine.add_asset(
             Path::new("gltf_model/shaders/uniforms.glsl"),
             include_bytes!("shaders/uniforms.glsl"),
         );
 
-        let fragment_shader = engine.add_asset(
-            Path::new("gltf_model/shaders/gltf.frag"),
-            include_bytes!("shaders/gltf.frag"),
+        engine.add_asset(
+            Path::new("gltf_model/shaders/light_caster.glsl"),
+            include_bytes!("shaders/light_caster.glsl"),
         );
 
         let vertex_shader = shaders::build(
@@ -34,7 +34,19 @@ impl<'a> InitData<'a> {
             ),
         )?;
 
-        let fragment_shader = shaders::build(engine, &fragment_shader)?;
+        let fragment_shader_src = if options.physical_based_rendering {
+            engine.add_asset(
+                Path::new("gltf_model/shaders/metallic_roughness.frag"),
+                include_bytes!("shaders/metallic_roughness.frag"),
+            )
+        } else {
+            engine.add_asset(
+                Path::new("gltf_model/shaders/gltf.frag"),
+                include_bytes!("shaders/phong.frag"),
+            )
+        };
+
+        let fragment_shader = shaders::build(engine, &fragment_shader_src)?;
 
         let textures_bind_group_layout =
             engine
@@ -148,15 +160,14 @@ impl<'a> InitData<'a> {
             &TextureSpec::emissive_texture(),
         );
 
-        let (metallic_roughness_texture, metallic_roughness_sampler) = self
-            .build_texture_and_sampler(
-                engine,
-                material
-                    .pbr_metallic_roughness()
-                    .metallic_roughness_texture()
-                    .map(|mr_texture| mr_texture.texture()),
-                &TextureSpec::metallic_roughness_texture(),
-            );
+        let (pbr_texture, pbr_sampler) = self.build_texture_and_sampler(
+            engine,
+            material
+                .pbr_metallic_roughness()
+                .metallic_roughness_texture()
+                .map(|mr_texture| mr_texture.texture()),
+            &TextureSpec::pbr_texture(),
+        );
 
         engine.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: None,
@@ -188,11 +199,11 @@ impl<'a> InitData<'a> {
                 },
                 wgpu::BindGroupEntry {
                     binding: 6,
-                    resource: wgpu::BindingResource::TextureView(&metallic_roughness_texture.view),
+                    resource: wgpu::BindingResource::TextureView(&pbr_texture.view),
                 },
                 wgpu::BindGroupEntry {
                     binding: 7,
-                    resource: wgpu::BindingResource::Sampler(&metallic_roughness_sampler),
+                    resource: wgpu::BindingResource::Sampler(&pbr_sampler),
                 },
             ],
         })
@@ -296,10 +307,10 @@ impl TextureSpec {
         }
     }
 
-    fn metallic_roughness_texture() -> Self {
+    fn pbr_texture() -> Self {
         Self {
             linear_colors: true,
-            default_data: [0x00, 0x00, 0x00, 0x00],
+            default_data: [0xff, 0x00, 0x00, 0x00],
         }
     }
 }

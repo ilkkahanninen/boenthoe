@@ -46,6 +46,7 @@ impl Primitive {
             base_color: pbr_model.base_color_factor().into(),
             textures: data.create_texture_bind_group(engine, &primitive_material),
             metallic_factor: pbr_model.metallic_factor(),
+            roughness_factor: pbr_model.roughness_factor(),
         };
 
         // Uniforms
@@ -226,6 +227,7 @@ struct Material {
     base_color: Vector4,
     textures: wgpu::BindGroup,
     metallic_factor: f32,
+    roughness_factor: f32,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -239,9 +241,10 @@ struct Uniforms {
     // 4 byte properties
     number_of_lights: u32,
     metallic_factor: f32,
+    roughness_factor: f32,
 
     // Pad to 16 byte stride
-    _padding: [f32; 2],
+    _padding: [f32; 1],
 }
 
 impl Default for Uniforms {
@@ -253,7 +256,8 @@ impl Default for Uniforms {
             base_color: (1.0, 1.0, 1.0, 1.0).into(),
             number_of_lights: 0,
             metallic_factor: 1.0,
-            _padding: [1234.5678, 1234.5678],
+            roughness_factor: 1.0,
+            _padding: [1234.5678; 1],
         }
     }
 }
@@ -267,6 +271,7 @@ impl Uniforms {
             base_color: material.base_color,
             number_of_lights: render_data.number_of_lights,
             metallic_factor: material.metallic_factor,
+            roughness_factor: material.roughness_factor,
             ..Default::default()
         }
     }
