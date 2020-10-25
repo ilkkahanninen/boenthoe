@@ -17,7 +17,29 @@ pub fn load(
 #[derive(Debug, Default)]
 pub struct ModelProperties {
     pub camera: Option<Camera>,
-    pub physical_based_rendering: bool,
+    pub rendering_mode: RenderingMode,
+}
+
+#[derive(Debug)]
+pub enum RenderingMode {
+    Phong,
+    PhongWithNormalMaps,
+    PhysicalBasedRendering,
+}
+
+impl Default for RenderingMode {
+    fn default() -> Self {
+        Self::PhysicalBasedRendering
+    }
+}
+
+impl RenderingMode {
+    pub fn uses_normal_maps(&self) -> bool {
+        match self {
+            Self::PhongWithNormalMaps | Self::PhysicalBasedRendering => true,
+            _ => false,
+        }
+    }
 }
 
 pub trait Model {

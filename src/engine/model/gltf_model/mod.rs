@@ -3,7 +3,7 @@ mod node;
 mod primitive;
 mod texture;
 
-use super::{Model, ModelProperties, ModelRenderContext};
+use super::{Model, ModelProperties, ModelRenderContext, RenderingMode};
 use crate::engine::{camera::Camera, prelude::*};
 use node::Node;
 

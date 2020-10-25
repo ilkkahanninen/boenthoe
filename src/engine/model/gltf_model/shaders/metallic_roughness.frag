@@ -1,4 +1,5 @@
 #version 450
+#define USE_NORMAL_MAPS
 #include "uniforms.glsl"
 
 // Inputs from vertex shader

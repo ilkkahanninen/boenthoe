@@ -1,8 +1,6 @@
 #version 450
 #include "uniforms.glsl"
 
-#define USE_NORMAL_MAPS
-
 // Inputs from vertex shader
 layout(location=0) in VS_OUT fs_in;
 

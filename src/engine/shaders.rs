@@ -1,6 +1,15 @@
 use crate::engine::prelude::*;
 
-pub fn build(engine: &Engine, asset: &Asset) -> Result<wgpu::ShaderModule, EngineError> {
+#[derive(Debug, Default)]
+pub struct ShaderBuildOptions<'a> {
+    pub macro_flags: &'a [&'a str],
+}
+
+pub fn build(
+    engine: &Engine,
+    asset: &Asset,
+    options: Option<&ShaderBuildOptions>,
+) -> Result<wgpu::ShaderModule, EngineError> {
     let kind = match asset.get_type() {
         AssetType::GlslVertexShader => shaderc::ShaderKind::Vertex,
         AssetType::GlslFragmentShader => shaderc::ShaderKind::Fragment,
@@ -15,7 +24,14 @@ pub fn build(engine: &Engine, asset: &Asset) -> Result<wgpu::ShaderModule, Engin
     let path = asset.path();
     let glsl = asset.to_utf8()?;
 
-    compile_into_spirv(engine, glsl, path, kind).or_else(|error| {
+    compile_into_spirv(
+        engine,
+        glsl,
+        path,
+        kind,
+        options.unwrap_or(&ShaderBuildOptions::default()),
+    )
+    .or_else(|error| {
         Err(EngineError::AssetParseError {
             path: path.clone(),
             message: error,
@@ -28,6 +44,7 @@ fn compile_into_spirv(
     glsl: &str,
     path: &PathBuf,
     kind: shaderc::ShaderKind,
+    build_options: &ShaderBuildOptions,
 ) -> Result<wgpu::ShaderModule, String> {
     // Acquire compiler
     let mut compiler = match shaderc::Compiler::new() {
@@ -54,6 +71,10 @@ fn compile_into_spirv(
             resolved_name: asset.path().to_string_lossy().to_string(),
         })
     });
+
+    for define in build_options.macro_flags {
+        options.add_macro_definition(define, None);
+    }
 
     // Compile
     let spirv = compiler

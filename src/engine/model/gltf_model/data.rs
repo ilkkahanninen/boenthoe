@@ -1,4 +1,4 @@
-use super::{texture::GltfTexture, ModelProperties};
+use super::{texture::GltfTexture, ModelProperties, RenderingMode};
 use crate::engine::prelude::*;
 
 pub struct InitData<'a> {
@@ -32,21 +32,27 @@ impl<'a> InitData<'a> {
                 Path::new("gltf_model/shaders/gltf.vert"),
                 include_bytes!("shaders/gltf.vert"),
             ),
+            Some(&shaders::ShaderBuildOptions {
+                macro_flags: if options.rendering_mode.uses_normal_maps() {
+                    &["USE_NORMAL_MAPS"]
+                } else {
+                    &[]
+                },
+            }),
         )?;
 
-        let fragment_shader_src = if options.physical_based_rendering {
-            engine.add_asset(
+        let fragment_shader_src = match options.rendering_mode {
+            RenderingMode::PhysicalBasedRendering => engine.add_asset(
                 Path::new("gltf_model/shaders/metallic_roughness.frag"),
                 include_bytes!("shaders/metallic_roughness.frag"),
-            )
-        } else {
-            engine.add_asset(
+            ),
+            RenderingMode::Phong | RenderingMode::PhongWithNormalMaps => engine.add_asset(
                 Path::new("gltf_model/shaders/gltf.frag"),
                 include_bytes!("shaders/phong.frag"),
-            )
+            ),
         };
 
-        let fragment_shader = shaders::build(engine, &fragment_shader_src)?;
+        let fragment_shader = shaders::build(engine, &fragment_shader_src, None)?;
 
         let textures_bind_group_layout =
             engine
