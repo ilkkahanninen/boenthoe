@@ -40,21 +40,21 @@ pub fn diffuse(engine: &engine::Engine, asset: &assets::Asset) -> Result<Texture
     })
 }
 
-pub fn color_buffer(engine: &engine::Engine) -> Texture {
-    buffer(engine, engine.swap_chain_descriptor.format)
+pub fn color_buffer(engine: &engine::Engine, scale: f32) -> Texture {
+    buffer(engine, engine.swap_chain_descriptor.format, scale)
 }
 
 pub fn depth_buffer(engine: &engine::Engine) -> Texture {
-    buffer(engine, DEPTH_FORMAT)
+    buffer(engine, DEPTH_FORMAT, 1.0)
 }
 
-pub fn buffer(engine: &engine::Engine, format: wgpu::TextureFormat) -> Texture {
+pub fn buffer(engine: &engine::Engine, format: wgpu::TextureFormat, scale: f32) -> Texture {
     let device = &engine.device;
     let swap_chain_descriptor = &engine.swap_chain_descriptor;
 
     let texture = device.create_texture(&default_texture_descriptor(
-        swap_chain_descriptor.width,
-        swap_chain_descriptor.height,
+        (swap_chain_descriptor.width as f32 * scale) as u32, // TODO: Ensure webgpu compatible width
+        (swap_chain_descriptor.height as f32 * scale) as u32,
         format,
     ));
 

@@ -49,6 +49,7 @@ impl EngineError {
 
 pub mod prelude {
     pub type Point3 = cgmath::Point3<f32>;
+    pub type Vector2 = cgmath::Vector2<f32>;
     pub type Vector3 = cgmath::Vector3<f32>;
     pub type Vector4 = cgmath::Vector4<f32>;
     pub type Matrix3 = cgmath::Matrix3<f32>;
@@ -57,6 +58,7 @@ pub mod prelude {
     pub use super::assets::{Asset, AssetLibrary, AssetType};
     pub use super::camera::Camera;
     pub use super::databuffers::{StorageBuffer, UniformBuffer};
+    pub use super::effect_layer;
     pub use super::engine::Engine;
     pub use super::lights::{Light, LightBufferObject};
     pub use super::model::{Model, ModelProperties, ModelRenderContext};
@@ -69,4 +71,5 @@ pub mod prelude {
     pub use super::EngineError;
 
     pub use std::path::{Path, PathBuf};
+    pub use std::rc::Rc;
 }

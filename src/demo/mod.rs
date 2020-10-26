@@ -1,6 +1,6 @@
 mod testeffect;
 
-use crate::engine::{engine::Engine, EngineError};
+use crate::engine::prelude::*;
 use futures::executor::block_on;
 use std::path::Path;
 
@@ -9,7 +9,13 @@ pub fn init(window: &mut winit::window::Window) -> Result<Engine, EngineError> {
 
     // engine.set_music(include_bytes!("assets/musa.mp3"));
 
-    testeffect::TestEffect::attach(&engine)?;
+    let buffer = Rc::new(textures::color_buffer(&engine, 1.0));
+    let test_model = testeffect::TestEffect::new(&engine, Some(buffer.clone()))?;
+    engine.add_renderer(Box::new(test_model));
+
+    let mut blur = effect_layer::Blur::new(&engine, buffer.clone(), None)?;
+    blur.set_size(8, 0.005);
+    engine.add_renderer(Box::new(blur));
 
     Ok(engine)
 }

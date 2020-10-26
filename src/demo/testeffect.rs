@@ -6,10 +6,11 @@ pub struct TestEffect {
     script: scripts::Script,
     depth_buffer: Texture,
     camera: Camera,
+    output: Option<Rc<Texture>>,
 }
 
 impl TestEffect {
-    pub fn attach(engine: &Engine) -> Result<(), EngineError> {
+    pub fn new(engine: &Engine, output: Option<Rc<Texture>>) -> Result<Self, EngineError> {
         let model = model::load(
             engine,
             &engine.load_asset(&Path::new("assets/WaterBottle.glb")),
@@ -19,12 +20,13 @@ impl TestEffect {
         let depth_buffer = textures::depth_buffer(engine);
         let camera = Camera::default();
 
-        Ok(engine.add_renderer(Box::new(Self {
+        Ok(Self {
             model,
             script,
             depth_buffer,
             camera,
-        })))
+            output,
+        })
     }
 }
 
@@ -92,11 +94,20 @@ impl Renderer for TestEffect {
     }
 
     fn render(&mut self, ctx: &mut RenderingContext) {
-        ctx.clear(wgpu::Color::BLACK, None, Some(&self.depth_buffer.view));
+        let output = match self.output {
+            Some(ref output) => &output.view,
+            None => ctx.output,
+        };
+
+        ctx.clear(
+            wgpu::Color::BLACK,
+            Some(output),
+            Some(&self.depth_buffer.view),
+        );
 
         self.model.render(&mut model::ModelRenderContext {
             device: ctx.device,
-            output: ctx.output,
+            output,
             encoder: ctx.encoder,
             depth_buffer: &self.depth_buffer,
         });

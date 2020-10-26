@@ -1,5 +1,4 @@
 #version 450
-#include "uniforms.glsl"
 
 layout(location=0) out vec2 v_tex_coords;
 
