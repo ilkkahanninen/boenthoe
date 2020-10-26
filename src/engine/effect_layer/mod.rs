@@ -1,5 +1,7 @@
+mod bloom;
 mod blur;
 
+pub use bloom::Bloom;
 pub use blur::Blur;
 
 use crate::engine::prelude::*;
@@ -19,6 +21,7 @@ impl EffectLayer {
         output: Option<Rc<Texture>>,
         inputs: &[Rc<Texture>],
         fragment_shader: &Rc<Asset>,
+        shader_macro_flags: &[&str],
         label: &str,
     ) -> Result<Self, EngineError> {
         // API for fragment shaders
@@ -38,7 +41,13 @@ impl EffectLayer {
         )?;
 
         // Fragment shader
-        let fragment_shader = shaders::build(engine, &fragment_shader, None)?;
+        let fragment_shader = shaders::build(
+            engine,
+            &fragment_shader,
+            Some(&shaders::ShaderBuildOptions {
+                macro_flags: shader_macro_flags,
+            }),
+        )?;
 
         // Uniforms
         let uniforms = Uniforms::new(inputs.len() as u32);

@@ -13,9 +13,8 @@ pub fn init(window: &mut winit::window::Window) -> Result<Engine, EngineError> {
     let test_model = testeffect::TestEffect::new(&engine, Some(buffer.clone()))?;
     engine.add_renderer(Box::new(test_model));
 
-    let mut blur = effect_layer::Blur::new(&engine, buffer.clone(), None)?;
-    blur.set_size(8, 0.005);
-    engine.add_renderer(Box::new(blur));
+    let bloom = effect_layer::Bloom::new(&engine, buffer.clone(), None)?;
+    engine.add_renderer(Box::new(bloom));
 
     Ok(engine)
 }

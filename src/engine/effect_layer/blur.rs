@@ -11,6 +11,7 @@ impl Blur {
     pub fn new(
         engine: &Engine,
         input: Rc<Texture>,
+        blend_input: Option<Rc<Texture>>,
         output: Option<Rc<Texture>>,
     ) -> Result<Self, EngineError> {
         let fragment_shader = engine.add_asset(
@@ -22,16 +23,25 @@ impl Blur {
         let horizontal_blur = EffectLayer::new(
             engine,
             Some(buffer.clone()),
-            &[input],
+            &[input.clone()],
             &fragment_shader,
+            &[],
             "Blur::Horizontal",
         )?;
+
+        let mut inputs = vec![buffer.clone()];
+        let mut shader_macro_flags = vec![];
+        if let Some(blend) = blend_input {
+            inputs.push(blend.clone());
+            shader_macro_flags.push("BLEND_WITH_SECONDARY");
+        }
 
         let vertical_blur = EffectLayer::new(
             engine,
             output,
-            &[buffer.clone()],
+            &inputs,
             &fragment_shader,
+            &shader_macro_flags,
             "Blur::Vertical",
         )?;
 
@@ -49,6 +59,10 @@ impl Blur {
             .set_args(&[delta, start, samples as f32, 1.0]);
         self.vertical_blur
             .set_args(&[delta, start, samples as f32, 0.0]);
+    }
+
+    pub fn get_temp_buffer(&self) -> Rc<Texture> {
+        self.buffer.clone()
     }
 }
 

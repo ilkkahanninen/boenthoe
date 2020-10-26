@@ -13,5 +13,11 @@ void main() {
         color += texture(sampler2D(t_primary, s_primary), uv);
     }
 
-    out_color = color / float(samples);
+    color /= float(samples);
+
+    #ifdef BLEND_WITH_SECONDARY
+        color += texture(sampler2D(t_secondary, s_secondary), v_tex_coords);
+    #endif
+
+    out_color = color;
 }

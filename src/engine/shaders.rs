@@ -73,6 +73,7 @@ fn compile_into_spirv(
     });
 
     for define in build_options.macro_flags {
+        println!("#define {}", define);
         options.add_macro_definition(define, None);
     }
 
