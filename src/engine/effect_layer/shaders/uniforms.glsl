@@ -2,7 +2,6 @@
 
 layout(set = 0, binding = 0) uniform EffectLayerUniforms {
     vec4 args;
-    uint number_of_inputs;
     float time;
 } effect_layer;
 

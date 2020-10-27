@@ -2,78 +2,131 @@ use super::EffectLayer;
 use crate::engine::prelude::*;
 
 pub struct Blur {
+    initial_horizontal_blur: EffectLayer,
     horizontal_blur: EffectLayer,
     vertical_blur: EffectLayer,
-    buffer: Rc<Texture>,
+
+    input: Rc<Texture>,
+    pingpong_buffers: (Rc<Texture>, Rc<Texture>),
+    output: Option<Rc<Texture>>,
+    output_blend: Option<Rc<Texture>>,
+
+    amount: u32,
 }
 
 impl Blur {
     pub fn new(
         engine: &Engine,
         input: Rc<Texture>,
-        blend_input: Option<Rc<Texture>>,
         output: Option<Rc<Texture>>,
+        output_blend: Option<Rc<Texture>>,
     ) -> Result<Self, EngineError> {
         let fragment_shader = engine.add_asset(
             Path::new("effect_layer/shaders/blur.frag"),
             include_bytes!("shaders/blur.frag"),
         );
 
-        let buffer = Rc::new(textures::color_buffer(engine, 0.5));
-        let horizontal_blur = EffectLayer::new(
+        let pingpong_buffers = (
+            Rc::new(textures::color_buffer(engine, 0.5)),
+            Rc::new(textures::color_buffer(engine, 0.5)),
+        );
+
+        let mut initial_horizontal_blur = EffectLayer::new(
             engine,
-            Some(buffer.clone()),
-            &[input.clone()],
+            &[input.get_layout()],
+            &fragment_shader,
+            &[],
+            "Blur::InitialHorizontal",
+        )?;
+
+        let mut horizontal_blur = EffectLayer::new(
+            engine,
+            &[pingpong_buffers.1.get_layout()],
             &fragment_shader,
             &[],
             "Blur::Horizontal",
         )?;
 
-        let mut inputs = vec![buffer.clone()];
-        let mut shader_macro_flags = vec![];
-        if let Some(blend) = blend_input {
-            inputs.push(blend.clone());
-            shader_macro_flags.push("BLEND_WITH_SECONDARY");
-        }
-
-        let vertical_blur = EffectLayer::new(
+        let mut vertical_blur = EffectLayer::new(
             engine,
-            output,
-            &inputs,
+            &[pingpong_buffers.0.get_layout()],
             &fragment_shader,
-            &shader_macro_flags,
+            match output_blend {
+                Some(_) => &["BLEND_WITH_SECONDARY"],
+                None => &[],
+            },
             "Blur::Vertical",
         )?;
 
+        // Set coefficients
+        let resolution = (engine.size.width as f32, engine.size.height as f32);
+        let k1 = 1.3846153846;
+        let k2 = 3.2307692308;
+        let h_off1 = k1 / resolution.0;
+        let h_off2 = k2 / resolution.0;
+        let v_off1 = k1 / resolution.1;
+        let v_off2 = k2 / resolution.1;
+
+        initial_horizontal_blur.set_args(&[h_off1, 0.0, h_off2, 0.0]);
+        horizontal_blur.set_args(&[h_off1, 0.0, h_off2, 0.0]);
+        vertical_blur.set_args(&[0.0, v_off1, 0.0, v_off2]);
+
         Ok(Self {
+            initial_horizontal_blur,
             horizontal_blur,
             vertical_blur,
-            buffer,
+
+            input,
+            pingpong_buffers,
+            output,
+            output_blend,
+
+            amount: 5,
         })
     }
 
-    pub fn set_size(&mut self, samples: u32, size: f32) {
-        let delta = size / (samples - 1) as f32;
-        let start = -size / 2.0;
-        self.horizontal_blur
-            .set_args(&[delta, start, samples as f32, 1.0]);
-        self.vertical_blur
-            .set_args(&[delta, start, samples as f32, 0.0]);
-    }
-
-    pub fn get_temp_buffer(&self) -> Rc<Texture> {
-        self.buffer.clone()
+    pub fn set_blur_size(&mut self, blur_size: u32) {
+        self.amount = blur_size;
     }
 }
 
 impl Renderer for Blur {
     fn update(&mut self, context: &mut RenderingContext) {
+        // TODO: Update only on first run
+        self.initial_horizontal_blur.update(context);
         self.horizontal_blur.update(context);
         self.vertical_blur.update(context);
     }
 
     fn render(&mut self, context: &mut RenderingContext) {
-        self.horizontal_blur.render(context);
-        self.vertical_blur.render(context);
+        // TODO: Copy texture from input to output if amount == 0
+        for i in 0..self.amount {
+            if i == 0 {
+                self.initial_horizontal_blur.render(
+                    context,
+                    &[self.input.get_bind_group()],
+                    &self.pingpong_buffers.0.view,
+                );
+            } else {
+                self.horizontal_blur.render(
+                    context,
+                    &[self.pingpong_buffers.1.get_bind_group()],
+                    &self.pingpong_buffers.0.view,
+                );
+            }
+
+            self.vertical_blur.render(
+                context,
+                &[self.pingpong_buffers.0.get_bind_group()],
+                if i < self.amount - 1 {
+                    &self.pingpong_buffers.1.view
+                } else {
+                    match self.output {
+                        Some(ref output) => &output.view,
+                        None => context.output,
+                    }
+                },
+            );
+        }
     }
 }

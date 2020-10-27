@@ -97,7 +97,7 @@ impl Primitive {
         // Update uniforms buffer
         self.uniforms_storage.copy_to_gpu(
             context.device,
-            &mut context.encoder,
+            context.encoder,
             &Uniforms::new(data, &self.material),
         );
 

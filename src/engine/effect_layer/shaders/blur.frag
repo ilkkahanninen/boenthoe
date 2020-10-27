@@ -2,18 +2,11 @@
 #include "uniforms.glsl"
 
 void main() {
-    vec2 direction = vec2(effect_layer.args.w, 1.0 - effect_layer.args.w);
-    vec2 delta = direction * vec2(effect_layer.args.x);
-    int samples = int(effect_layer.args.z);
-
-    vec2 uv = v_tex_coords + direction * vec2(effect_layer.args.y);
-
-    vec4 color = vec4(0.0);
-    for (int i = 0; i < samples; i++, uv += delta) {
-        color += texture(sampler2D(t_primary, s_primary), uv);
-    }
-
-    color /= float(samples);
+    vec4 color = texture(sampler2D(t_primary, s_primary), v_tex_coords) * 0.2270270270;
+    color = texture(sampler2D(t_primary, s_primary), v_tex_coords + effect_layer.args.xy) * 0.3162162162 + color;
+    color = texture(sampler2D(t_primary, s_primary), v_tex_coords - effect_layer.args.xy) * 0.3162162162 + color;
+    color = texture(sampler2D(t_primary, s_primary), v_tex_coords + effect_layer.args.zw) * 0.0702702703 + color;
+    color = texture(sampler2D(t_primary, s_primary), v_tex_coords - effect_layer.args.zw) * 0.0702702703 + color;
 
     #ifdef BLEND_WITH_SECONDARY
         color += texture(sampler2D(t_secondary, s_secondary), v_tex_coords);

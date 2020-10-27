@@ -144,7 +144,7 @@ impl Engine {
         self.timer.reset();
     }
 
-    /// Renders a frame and returns used time in seconds
+    /// Renders a frame and returns used time in
     pub fn render(&mut self) -> f64 {
         let render_start_time = self.timer.elapsed();
         self.check_changed_files();
@@ -155,29 +155,22 @@ impl Engine {
             .get_current_frame()
             .expect("Timeout getting a frame texture");
 
-        let mut encoder = self
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("Engine::render encoder"),
-            });
-
         let mut renderers = self.renderers.lock().unwrap();
         let time = self.timer.elapsed();
         for renderer in renderers.iter_mut() {
             let mut context = renderer::RenderingContext {
                 device: &self.device,
-                encoder: &mut encoder,
+                queue: &mut self.queue,
                 output: &frame.output.view,
                 time,
                 screen_size: &self.size,
             };
+
             if renderer.should_render(&context) {
                 renderer.update(&mut context);
                 renderer.render(&mut context);
             }
         }
-
-        self.queue.submit(vec![encoder.finish()]);
 
         self.timer.elapsed() - render_start_time
     }

@@ -1,4 +1,4 @@
-use crate::engine::object::Object;
+use crate::engine::prelude::*;
 use wgpu::util::DeviceExt;
 
 pub struct UniformBuffer<T> {

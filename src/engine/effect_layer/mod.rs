@@ -1,7 +1,7 @@
-mod bloom;
+// mod bloom;
 mod blur;
 
-pub use bloom::Bloom;
+// pub use bloom::Bloom;
 pub use blur::Blur;
 
 use crate::engine::prelude::*;
@@ -9,8 +9,6 @@ use std::rc::Rc;
 
 pub struct EffectLayer {
     pipeline: wgpu::RenderPipeline,
-    output: Option<Rc<Texture>>,
-    inputs: Vec<Rc<Texture>>,
     uniforms: Uniforms,
     uniforms_storage: UniformBuffer<Uniforms>,
 }
@@ -18,8 +16,7 @@ pub struct EffectLayer {
 impl EffectLayer {
     pub fn new(
         engine: &Engine,
-        output: Option<Rc<Texture>>,
-        inputs: &[Rc<Texture>],
+        input_bind_group_layouts: &[&wgpu::BindGroupLayout],
         fragment_shader: &Rc<Asset>,
         shader_macro_flags: &[&str],
         label: &str,
@@ -50,14 +47,14 @@ impl EffectLayer {
         )?;
 
         // Uniforms
-        let uniforms = Uniforms::new(inputs.len() as u32);
+        let uniforms = Uniforms::new();
         let uniforms_storage =
             UniformBuffer::init(&engine.device, uniforms, &format!("{}::Uniforms", label));
 
         // Bind group layouts
         let mut bind_group_layouts = vec![uniforms_storage.get_layout()];
-        for input in inputs {
-            bind_group_layouts.push(input.get_layout());
+        for input in input_bind_group_layouts {
+            bind_group_layouts.push(input);
         }
 
         // Pipeline
@@ -70,8 +67,6 @@ impl EffectLayer {
 
         Ok(Self {
             pipeline: pipeline::build_pipeline(engine, pipeline_descriptor),
-            output,
-            inputs: inputs.to_vec(),
             uniforms,
             uniforms_storage,
         })
@@ -88,23 +83,25 @@ impl EffectLayer {
     pub fn set_arg(&mut self, index: usize, arg: f32) {
         self.uniforms.args[index] = arg;
     }
-}
 
-impl Renderer for EffectLayer {
     fn update(&mut self, context: &mut RenderingContext) {
+        let mut encoder = context.create_encoder();
         self.uniforms_storage
-            .copy_to_gpu(context.device, context.encoder, &self.uniforms);
+            .copy_to_gpu(context.device, &mut encoder, &self.uniforms);
+        context.submit(encoder);
     }
 
-    fn render(&mut self, context: &mut RenderingContext) {
-        let mut render_pass = context
-            .encoder
-            .begin_render_pass(&wgpu::RenderPassDescriptor {
+    fn render(
+        &mut self,
+        context: &mut RenderingContext,
+        inputs: &[&wgpu::BindGroup],
+        output: &wgpu::TextureView,
+    ) {
+        let mut encoder = context.create_encoder();
+        {
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: match &self.output {
-                        Some(output) => &output.view,
-                        None => context.output,
-                    },
+                    attachment: output,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
@@ -114,12 +111,14 @@ impl Renderer for EffectLayer {
                 depth_stencil_attachment: None,
             });
 
-        render_pass.set_pipeline(&self.pipeline);
-        render_pass.set_bind_group(0, self.uniforms_storage.get_bind_group(), &[]);
-        for (index, input) in self.inputs.iter().enumerate() {
-            render_pass.set_bind_group(index as u32 + 1, input.get_bind_group(), &[]);
+            render_pass.set_pipeline(&self.pipeline);
+            render_pass.set_bind_group(0, self.uniforms_storage.get_bind_group(), &[]);
+            for (index, input) in inputs.iter().enumerate() {
+                render_pass.set_bind_group(index as u32 + 1, input, &[]);
+            }
+            render_pass.draw(0..6, 0..1);
         }
-        render_pass.draw(0..6, 0..1);
+        context.submit(encoder);
     }
 }
 
@@ -127,18 +126,16 @@ impl Renderer for EffectLayer {
 #[derive(Debug, Copy, Clone)]
 struct Uniforms {
     args: [f32; 4],
-    number_of_inputs: u32,
     time: f32,
-    _padding: [f32; 2],
+    _padding: [f32; 3],
 }
 
 impl Uniforms {
-    fn new(number_of_inputs: u32) -> Self {
+    fn new() -> Self {
         Self {
-            number_of_inputs,
             args: [0.0; 4],
             time: 0.0,
-            _padding: [0.0, 0.0],
+            _padding: [0.0, 0.0, 0.0],
         }
     }
 }

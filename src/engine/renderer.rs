@@ -1,4 +1,4 @@
-use crate::engine::{assets::AssetLibrary, EngineError};
+use crate::engine::prelude::*;
 
 pub trait Renderer {
     fn reload_assets(&mut self, _assets: &AssetLibrary) -> Result<(), EngineError> {
@@ -13,10 +13,21 @@ pub trait Renderer {
 
 pub struct RenderingContext<'a> {
     pub device: &'a wgpu::Device,
-    pub encoder: &'a mut wgpu::CommandEncoder,
+    pub queue: &'a mut wgpu::Queue,
     pub output: &'a wgpu::TextureView,
     pub time: f64,
     pub screen_size: &'a winit::dpi::PhysicalSize<u32>,
+}
+
+impl<'a> RenderingContext<'a> {
+    pub fn create_encoder(&mut self) -> wgpu::CommandEncoder {
+        self.device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None })
+    }
+
+    pub fn submit(&self, encoder: wgpu::CommandEncoder) {
+        self.queue.submit(vec![encoder.finish()]);
+    }
 }
 
 impl<'a> RenderingContext<'a> {
@@ -26,25 +37,29 @@ impl<'a> RenderingContext<'a> {
         output: Option<&wgpu::TextureView>,
         depth_buffer: Option<&wgpu::TextureView>,
     ) {
-        self.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                attachment: output.unwrap_or(self.output),
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(color),
-                    store: true,
-                },
-            }],
-            depth_stencil_attachment: depth_buffer.map(|attachment| {
-                wgpu::RenderPassDepthStencilAttachmentDescriptor {
-                    attachment,
-                    depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(1.0),
+        let mut encoder = self.create_encoder();
+        {
+            encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                    attachment: output.unwrap_or(self.output),
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(color),
                         store: true,
-                    }),
-                    stencil_ops: None,
-                }
-            }),
-        });
+                    },
+                }],
+                depth_stencil_attachment: depth_buffer.map(|attachment| {
+                    wgpu::RenderPassDepthStencilAttachmentDescriptor {
+                        attachment,
+                        depth_ops: Some(wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(1.0),
+                            store: true,
+                        }),
+                        stencil_ops: None,
+                    }
+                }),
+            });
+        }
+        self.submit(encoder);
     }
 }
