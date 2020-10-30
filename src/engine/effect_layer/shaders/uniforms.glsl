@@ -2,6 +2,7 @@
 
 layout(set = 0, binding = 0) uniform EffectLayerUniforms {
     vec4 args;
+    vec4 args2;
     float time;
 } effect_layer;
 

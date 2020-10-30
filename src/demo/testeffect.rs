@@ -4,20 +4,23 @@ use std::path::Path;
 pub struct TestEffect {
     model: Box<dyn model::Model>,
     script: scripts::Script,
-    depth_buffer: Texture,
+    depth_buffer: Rc<Texture>,
     camera: Camera,
     output: Option<Rc<Texture>>,
 }
 
 impl TestEffect {
-    pub fn new(engine: &Engine, output: Option<Rc<Texture>>) -> Result<Self, EngineError> {
+    pub fn new(
+        engine: &Engine,
+        depth_buffer: Rc<Texture>,
+        output: Option<Rc<Texture>>,
+    ) -> Result<Self, EngineError> {
         let model = model::load(
             engine,
             &engine.load_asset(&Path::new("assets/WaterBottle.glb")),
             &model::ModelProperties::default(),
         )?;
         let script = scripts::build(&engine.load_asset(&Path::new("assets/camerajump.boe")))?;
-        let depth_buffer = textures::depth_buffer(engine);
         let camera = Camera::default();
 
         Ok(Self {

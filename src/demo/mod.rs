@@ -10,11 +10,16 @@ pub fn init(window: &mut winit::window::Window) -> Result<Engine, EngineError> {
     // engine.set_music(include_bytes!("assets/musa.mp3"));
 
     let buffer = Rc::new(textures::color_buffer(&engine, 1.0));
-    let test_model = testeffect::TestEffect::new(&engine, Some(buffer.clone()))?;
+    let depth_buffer = Rc::new(textures::depth_buffer(&engine));
+    let test_model =
+        testeffect::TestEffect::new(&engine, depth_buffer.clone(), Some(buffer.clone()))?;
     engine.add_renderer(Box::new(test_model));
 
-    let bloom = effect_layer::Bloom::new(&engine, buffer.clone(), None)?;
-    engine.add_renderer(Box::new(bloom));
+    // let bloom = effect_layer::Bloom::new(&engine, buffer.clone(), None)?;
+    // engine.add_renderer(Box::new(bloom));
+    let fod =
+        effect_layer::FieldOfDepth::new(&engine, 4, buffer.clone(), depth_buffer.clone(), None)?;
+    engine.add_renderer(Box::new(fod));
 
     Ok(engine)
 }
