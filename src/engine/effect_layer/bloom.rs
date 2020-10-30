@@ -4,6 +4,7 @@ use crate::engine::prelude::*;
 pub struct Bloom {
     threshold: EffectLayer,
     blur: Blur,
+    input: Rc<Texture>,
     buffer: Rc<Texture>,
 }
 
@@ -21,20 +22,20 @@ impl Bloom {
         let buffer = Rc::new(textures::color_buffer(engine, 1.0));
         let threshold = EffectLayer::new(
             engine,
-            Some(buffer.clone()),
-            &[input.clone()],
+            &[input.get_layout()],
             &fragment_shader,
             &[],
             "BloomThreshold",
         )?;
 
-        let mut blur = Blur::new(engine, buffer.clone(), Some(input.clone()), output)?;
-        blur.set_size(16, 0.02);
+        let mut blur = Blur::new(engine, buffer.clone(), output, Some(input.clone()))?;
+        blur.set_blur_size(25);
 
         Ok(Self {
+            input,
             threshold,
-            blur,
             buffer,
+            blur,
         })
     }
 }
@@ -46,7 +47,8 @@ impl Renderer for Bloom {
     }
 
     fn render(&mut self, context: &mut RenderingContext) {
-        self.threshold.render(context);
+        self.threshold
+            .render(context, &[self.input.get_bind_group()], &self.buffer.view);
         self.blur.render(context);
     }
 }

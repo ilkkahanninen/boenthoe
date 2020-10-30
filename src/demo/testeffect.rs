@@ -105,7 +105,7 @@ impl Renderer for TestEffect {
             Some(&self.depth_buffer.view),
         );
 
-        let mut encoder = ctx.create_encoder();
+        let mut encoder = ctx.create_encoder("TestEffect");
         self.model.render(&mut model::ModelRenderContext {
             device: ctx.device,
             output,

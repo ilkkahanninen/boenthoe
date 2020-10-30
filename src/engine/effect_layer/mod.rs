@@ -1,7 +1,7 @@
-// mod bloom;
+mod bloom;
 mod blur;
 
-// pub use bloom::Bloom;
+pub use bloom::Bloom;
 pub use blur::Blur;
 
 use crate::engine::prelude::*;
@@ -11,6 +11,8 @@ pub struct EffectLayer {
     pipeline: wgpu::RenderPipeline,
     uniforms: Uniforms,
     uniforms_storage: UniformBuffer<Uniforms>,
+    update_label: String,
+    render_label: String,
 }
 
 impl EffectLayer {
@@ -69,6 +71,8 @@ impl EffectLayer {
             pipeline: pipeline::build_pipeline(engine, pipeline_descriptor),
             uniforms,
             uniforms_storage,
+            update_label: format!("{}::update", label),
+            render_label: format!("{}::render", label),
         })
     }
 
@@ -85,7 +89,7 @@ impl EffectLayer {
     }
 
     fn update(&mut self, context: &mut RenderingContext) {
-        let mut encoder = context.create_encoder();
+        let mut encoder = context.create_encoder(&self.update_label);
         self.uniforms_storage
             .copy_to_gpu(context.device, &mut encoder, &self.uniforms);
         context.submit(encoder);
@@ -97,7 +101,7 @@ impl EffectLayer {
         inputs: &[&wgpu::BindGroup],
         output: &wgpu::TextureView,
     ) {
-        let mut encoder = context.create_encoder();
+        let mut encoder = context.create_encoder(&self.render_label);
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {

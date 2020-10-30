@@ -20,9 +20,9 @@ pub struct RenderingContext<'a> {
 }
 
 impl<'a> RenderingContext<'a> {
-    pub fn create_encoder(&mut self) -> wgpu::CommandEncoder {
+    pub fn create_encoder(&mut self, label: &str) -> wgpu::CommandEncoder {
         self.device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None })
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some(label) })
     }
 
     pub fn submit(&self, encoder: wgpu::CommandEncoder) {
@@ -37,7 +37,7 @@ impl<'a> RenderingContext<'a> {
         output: Option<&wgpu::TextureView>,
         depth_buffer: Option<&wgpu::TextureView>,
     ) {
-        let mut encoder = self.create_encoder();
+        let mut encoder = self.create_encoder("Clear");
         {
             encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
