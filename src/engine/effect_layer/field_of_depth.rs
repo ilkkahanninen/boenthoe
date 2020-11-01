@@ -102,7 +102,7 @@ impl Renderer for FieldOfDepth {
     fn update(&mut self, _context: &mut RenderingContext) {}
 
     fn render(&mut self, context: &mut RenderingContext) {
-        let threshold_step = 1.0 / self.quality as f32;
+        let threshold_step = self.focus.max(1.0 - self.focus) / self.quality as f32;
 
         for i in 0..self.quality {
             let args = [threshold_step * (i + 1) as f32, self.focus, 0.0, 0.0];

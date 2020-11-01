@@ -18,7 +18,7 @@ pub fn init(window: &mut winit::window::Window) -> Result<Engine, EngineError> {
     // let bloom = effect_layer::Bloom::new(&engine, buffer.clone(), None)?;
     // engine.add_renderer(Box::new(bloom));
     let fod =
-        effect_layer::FieldOfDepth::new(&engine, 4, buffer.clone(), depth_buffer.clone(), None)?;
+        effect_layer::FieldOfDepth::new(&engine, 6, buffer.clone(), depth_buffer.clone(), None)?;
     engine.add_renderer(Box::new(fod));
 
     Ok(engine)
