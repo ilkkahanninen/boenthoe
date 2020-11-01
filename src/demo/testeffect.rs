@@ -113,6 +113,7 @@ impl Renderer for TestEffect {
             device: ctx.device,
             output,
             encoder: &mut encoder,
+            queue: ctx.queue,
             depth_buffer: &self.depth_buffer,
         });
         ctx.submit(encoder);

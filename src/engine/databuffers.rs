@@ -3,6 +3,7 @@ use wgpu::util::DeviceExt;
 
 pub struct UniformBuffer<T> {
     buffer: wgpu::Buffer,
+    staging_buffer: wgpu::Buffer,
     bind_group_layout: wgpu::BindGroupLayout,
     bind_group: wgpu::BindGroup,
     label: String,
@@ -40,6 +41,12 @@ where
 
         Self {
             buffer,
+            staging_buffer: Self::create_buffer(
+                device,
+                &initial_data,
+                false,
+                &format!("{} staging", label),
+            ),
             bind_group_layout,
             bind_group,
             label: label.into(),
@@ -47,10 +54,10 @@ where
         }
     }
 
-    pub fn copy_to_gpu(&self, device: &wgpu::Device, encoder: &mut wgpu::CommandEncoder, data: &T) {
-        let staging_buffer = Self::create_buffer(device, data, false, &self.label);
+    pub fn copy_to_gpu(&self, encoder: &mut wgpu::CommandEncoder, queue: &wgpu::Queue, data: &T) {
+        queue.write_buffer(&self.staging_buffer, 0, bytemuck::cast_slice(&[*data]));
         encoder.copy_buffer_to_buffer(
-            &staging_buffer,
+            &self.staging_buffer,
             0,
             &self.buffer,
             0,
@@ -86,7 +93,7 @@ where
                 | if is_destination {
                     wgpu::BufferUsage::COPY_DST
                 } else {
-                    wgpu::BufferUsage::COPY_SRC
+                    wgpu::BufferUsage::COPY_SRC | wgpu::BufferUsage::COPY_DST
                 },
             label: Some(label),
         })
@@ -106,6 +113,7 @@ impl<T> Object for UniformBuffer<T> {
 pub struct StorageBuffer<T> {
     label: String,
     buffer: wgpu::Buffer,
+    staging_buffer: wgpu::Buffer,
     bind_group_layout: wgpu::BindGroupLayout,
     bind_group: wgpu::BindGroup,
     phantom: std::marker::PhantomData<T>,
@@ -128,6 +136,7 @@ where
 
     pub fn init(device: &wgpu::Device, initial_data: Vec<T>, label: &str) -> Self {
         let buffer = Self::create_buffer(device, &initial_data, true, label);
+        let staging_buffer = Self::create_buffer(device, &initial_data, false, label);
 
         let bind_group_layout = Self::create_layout(device, label);
 
@@ -143,21 +152,17 @@ where
         Self {
             label: label.into(),
             buffer,
+            staging_buffer,
             bind_group_layout,
             bind_group,
             phantom: std::marker::PhantomData,
         }
     }
 
-    pub fn copy_to_gpu(
-        &self,
-        device: &wgpu::Device,
-        encoder: &mut wgpu::CommandEncoder,
-        data: &[T],
-    ) {
-        let staging_buffer = Self::create_buffer(device, data, false, &self.label);
+    pub fn copy_to_gpu(&self, encoder: &mut wgpu::CommandEncoder, queue: &wgpu::Queue, data: &[T]) {
+        queue.write_buffer(&self.staging_buffer, 0, bytemuck::cast_slice(&data));
         encoder.copy_buffer_to_buffer(
-            &staging_buffer,
+            &self.staging_buffer,
             0,
             &self.buffer,
             0,
@@ -193,7 +198,7 @@ where
                 | if is_destination {
                     wgpu::BufferUsage::COPY_DST
                 } else {
-                    wgpu::BufferUsage::COPY_SRC
+                    wgpu::BufferUsage::COPY_DST | wgpu::BufferUsage::COPY_SRC
                 },
             label: Some(label),
         })

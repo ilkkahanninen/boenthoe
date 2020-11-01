@@ -56,6 +56,7 @@ pub struct ModelRenderContext<'a> {
     pub device: &'a wgpu::Device,
     pub output: &'a wgpu::TextureView,
     pub encoder: &'a mut wgpu::CommandEncoder,
+    pub queue: &'a wgpu::Queue,
     pub depth_buffer: &'a Texture,
 }
 

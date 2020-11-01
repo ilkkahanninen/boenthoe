@@ -33,7 +33,7 @@ impl Model for GltfModel {
 
         if light_buffer_objects.len() > 0 {
             self.lights_buffer
-                .copy_to_gpu(context.device, context.encoder, &light_buffer_objects);
+                .copy_to_gpu(context.encoder, context.queue, &light_buffer_objects);
         }
 
         let data = ModelRenderData {

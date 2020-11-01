@@ -96,8 +96,8 @@ impl Primitive {
     pub fn render(&self, context: &mut ModelRenderContext, data: &ModelRenderData) {
         // Update uniforms buffer
         self.uniforms_storage.copy_to_gpu(
-            context.device,
             context.encoder,
+            context.queue,
             &Uniforms::new(data, &self.material),
         );
 
