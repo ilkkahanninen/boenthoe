@@ -51,6 +51,9 @@ impl Window {
         let mut options = options;
 
         engine.init();
+        let mut previous_elapsed = 0.0;
+        let mut fps_counter = WindowedAverageCounter::new();
+
         event_loop.run(move |event, _, control_flow| match event {
             Event::WindowEvent {
                 ref event,
@@ -78,9 +81,16 @@ impl Window {
             }
 
             Event::RedrawRequested(_) => {
-                let time = engine.render();
+                // Render frame
+                engine.render();
+
+                // Calculate FPS
                 if options.print_fps {
-                    println!("FPS: {}", (1.0 / time).round());
+                    let elapsed = engine.elapsed();
+                    if let Some(avg_time) = fps_counter.push(elapsed - previous_elapsed) {
+                        println!("FPS: {}", (1.0 / avg_time).round());
+                    }
+                    previous_elapsed = elapsed;
                 }
             }
 
@@ -95,4 +105,31 @@ impl Window {
 
 pub struct RunOptions {
     pub print_fps: bool,
+}
+
+const FPS_WINDOW_SIZE: usize = 100;
+struct WindowedAverageCounter {
+    values: [f64; FPS_WINDOW_SIZE],
+    count: usize,
+}
+
+impl WindowedAverageCounter {
+    fn new() -> Self {
+        Self {
+            values: [0.0; FPS_WINDOW_SIZE],
+            count: 0,
+        }
+    }
+
+    fn push(&mut self, value: f64) -> Option<f64> {
+        self.values[self.count] = value;
+        self.count += 1;
+
+        if self.count == FPS_WINDOW_SIZE {
+            self.count = 0;
+            Some(self.values.iter().sum::<f64>() / FPS_WINDOW_SIZE as f64)
+        } else {
+            None
+        }
+    }
 }

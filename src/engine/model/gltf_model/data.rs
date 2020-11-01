@@ -16,6 +16,17 @@ impl<'a> InitData<'a> {
         images: &'a Vec<gltf::image::Data>,
         options: &ModelProperties,
     ) -> Result<Self, EngineError> {
+        let vertex_shader_src = match options.rendering_mode {
+            RenderingMode::PhysicalBasedRendering => engine.add_asset(
+                Path::new("gltf_model/shaders/metallic_roughness.vert"),
+                include_bytes!("shaders/metallic_roughness.vert"),
+            ),
+            RenderingMode::Phong | RenderingMode::PhongWithNormalMaps => engine.add_asset(
+                Path::new("gltf_model/shaders/gltf.vert"),
+                include_bytes!("shaders/phong.vert"),
+            ),
+        };
+
         engine.add_asset(
             Path::new("gltf_model/shaders/uniforms.glsl"),
             include_bytes!("shaders/uniforms.glsl"),
@@ -28,10 +39,7 @@ impl<'a> InitData<'a> {
 
         let vertex_shader = shaders::build(
             engine,
-            &engine.add_asset(
-                Path::new("gltf_model/shaders/gltf.vert"),
-                include_bytes!("shaders/gltf.vert"),
-            ),
+            &vertex_shader_src,
             Some(&shaders::ShaderBuildOptions {
                 macro_flags: if options.rendering_mode.uses_normal_maps() {
                     &["USE_NORMAL_MAPS"]
