@@ -106,9 +106,11 @@ impl Asset {
 pub struct AssetLibrary {
     asset_path: PathBuf,
     assets: HashMap<PathBuf, Rc<Asset>>,
+    #[cfg(watcher)]
     watcher: Option<AssetWatcher>,
 }
 
+#[cfg(watcher)]
 struct AssetWatcher {
     watcher: notify::FsEventWatcher,
     receiver: std::sync::mpsc::Receiver<notify::DebouncedEvent>,
@@ -119,6 +121,7 @@ impl AssetLibrary {
         Self {
             asset_path: asset_path.into(),
             assets: HashMap::new(),
+            #[cfg(watcher)]
             watcher: None,
         }
     }
@@ -176,6 +179,7 @@ impl AssetLibrary {
         self.assets = new_assets;
     }
 
+    #[cfg(watcher)]
     pub fn start_watcher(&mut self) {
         use notify::Watcher;
 
@@ -193,6 +197,7 @@ impl AssetLibrary {
         });
     }
 
+    #[cfg(watcher)]
     pub fn detect_changes(&mut self) -> bool {
         let mut changes_detected = false;
 

@@ -137,6 +137,7 @@ impl Engine {
 
     pub fn init(&mut self) {
         self.process_ext_command_buffers();
+        #[cfg(watcher)]
         self.asset_library.lock().unwrap().start_watcher();
         if let Some(music) = self.music.as_mut() {
             music.play();
@@ -146,6 +147,7 @@ impl Engine {
 
     /// Renders a frame and returns used time in
     pub fn render(&mut self) {
+        #[cfg(watcher)]
         self.check_changed_files();
         self.process_ext_command_buffers();
 
@@ -183,6 +185,7 @@ impl Engine {
         self.timer.forward(seconds);
     }
 
+    #[cfg(watcher)]
     fn check_changed_files(&mut self) {
         let mut assets_lock = self.asset_library.try_lock();
         if let Ok(ref mut assets) = assets_lock {
