@@ -18,7 +18,10 @@ impl TestEffect {
         let model = model::load(
             engine,
             &engine.load_asset(&Path::new("assets/WaterBottle.glb")),
-            &model::ModelProperties::default(),
+            &model::ModelProperties {
+                rendering_mode: model::RenderingMode::Phong,
+                ..Default::default()
+            },
         )?;
         let script = scripts::build(&engine.load_asset(&Path::new("assets/camerajump.boe")))?;
         let camera = Camera::default();

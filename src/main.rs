@@ -19,7 +19,7 @@ fn main() {
     };
 
     let mut window = engine::window::Window::new(&engine::window::WindowProperties {
-        title: "Boenthoe 0.2.0",
+        title: "Boenthoe 0.2.1",
         size: winit::dpi::PhysicalSize {
             width: 1280,
             height: 720,
