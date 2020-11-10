@@ -57,9 +57,9 @@ impl ViewObject {
         }
     }
 
-    pub fn copy_to_gpu(&self, encoder: &mut wgpu::CommandEncoder, queue: &mut wgpu::Queue) {
+    pub fn copy_to_gpu(&self, queue: &mut wgpu::Queue) {
         let data = ViewUniform::from(&self.model);
-        self.storage.copy_to_gpu(encoder, queue, &data);
+        self.storage.copy_to_gpu(queue, &data);
     }
 }
 

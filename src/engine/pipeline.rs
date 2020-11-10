@@ -67,7 +67,7 @@ pub fn build_pipeline<'a>(
                 None
             },
             vertex_state: wgpu::VertexStateDescriptor {
-                index_format: wgpu::IndexFormat::Uint32,
+                index_format: wgpu::IndexFormat::Uint16,
                 vertex_buffers: &descriptor.vertex_buffers,
             },
             sample_count: descriptor.sample_count,
@@ -115,8 +115,8 @@ pub fn color_state(
     let (color_blend, alpha_blend) = blend_mode.get_descriptors();
     vec![wgpu::ColorStateDescriptor {
         format,
-        color_blend: color_blend,
-        alpha_blend: alpha_blend,
+        color_blend,
+        alpha_blend,
         write_mask: wgpu::ColorWrite::ALL,
     }]
 }

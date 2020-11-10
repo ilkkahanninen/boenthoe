@@ -3,7 +3,6 @@ use wgpu::util::DeviceExt;
 
 pub struct UniformBuffer<T> {
     buffer: wgpu::Buffer,
-    staging_buffer: wgpu::Buffer,
     bind_group_layout: wgpu::BindGroupLayout,
     bind_group: wgpu::BindGroup,
     label: String,
@@ -26,7 +25,7 @@ where
     }
 
     pub fn init(device: &wgpu::Device, initial_data: T, label: &str) -> Self {
-        let buffer = Self::create_buffer(device, &initial_data, true, label);
+        let buffer = Self::create_buffer(device, &initial_data, label);
 
         let bind_group_layout = Self::create_layout(device, label);
 
@@ -41,12 +40,6 @@ where
 
         Self {
             buffer,
-            staging_buffer: Self::create_buffer(
-                device,
-                &initial_data,
-                false,
-                &format!("{} staging", label),
-            ),
             bind_group_layout,
             bind_group,
             label: label.into(),
@@ -54,15 +47,8 @@ where
         }
     }
 
-    pub fn copy_to_gpu(&self, encoder: &mut wgpu::CommandEncoder, queue: &wgpu::Queue, data: &T) {
-        queue.write_buffer(&self.staging_buffer, 0, bytemuck::cast_slice(&[*data]));
-        encoder.copy_buffer_to_buffer(
-            &self.staging_buffer,
-            0,
-            &self.buffer,
-            0,
-            std::mem::size_of::<T>() as wgpu::BufferAddress,
-        );
+    pub fn copy_to_gpu(&self, queue: &wgpu::Queue, data: &T) {
+        queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&[*data]));
     }
 
     pub fn create_layout(device: &wgpu::Device, label: &str) -> wgpu::BindGroupLayout {
@@ -71,9 +57,8 @@ where
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
                 visibility: wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
-                ty: wgpu::BindingType::StorageBuffer {
+                ty: wgpu::BindingType::UniformBuffer {
                     dynamic: false,
-                    readonly: true,
                     min_binding_size: None,
                 },
                 count: None,
@@ -81,20 +66,12 @@ where
         })
     }
 
-    fn create_buffer(
-        device: &wgpu::Device,
-        data: &T,
-        is_destination: bool,
-        label: &str,
-    ) -> wgpu::Buffer {
+    fn create_buffer(device: &wgpu::Device, data: &T, label: &str) -> wgpu::Buffer {
         device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             contents: bytemuck::cast_slice(&[*data]),
-            usage: wgpu::BufferUsage::STORAGE
-                | if is_destination {
-                    wgpu::BufferUsage::COPY_DST
-                } else {
-                    wgpu::BufferUsage::COPY_SRC | wgpu::BufferUsage::COPY_DST
-                },
+            usage: wgpu::BufferUsage::UNIFORM
+                | wgpu::BufferUsage::COPY_DST
+                | wgpu::BufferUsage::COPY_SRC,
             label: Some(label),
         })
     }

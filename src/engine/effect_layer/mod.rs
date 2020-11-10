@@ -95,10 +95,8 @@ impl EffectLayer {
     }
 
     fn update(&mut self, context: &mut RenderingContext) {
-        let mut encoder = context.create_encoder(&self.update_label);
         self.uniforms_storage
-            .copy_to_gpu(&mut encoder, context.queue, &self.uniforms);
-        context.submit(encoder);
+            .copy_to_gpu(context.queue, &self.uniforms);
     }
 
     fn render(

@@ -77,6 +77,8 @@ fn compile_into_spirv(
         options.add_macro_definition(define, None);
     }
 
+    options.set_optimization_level(shaderc::OptimizationLevel::Performance);
+
     // Compile
     let spirv = compiler
         .compile_into_spirv(
