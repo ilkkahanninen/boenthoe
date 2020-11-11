@@ -1,19 +1,38 @@
 # Boenthoe
 
-Rust demo engine. The first proof-of-concept demo is built with this engine (just compile and run the master). Lots and lots are going to change.
+Multiplatform Rust demo engine.
 
-Next steps:
+Everything is *still* very unfinished but it starts to come together.
 
-- Rewrite and simplify rendering pipeline creation.
-- Own script language (BoenthoeScript a.k.a. bäsä) for setting parametrizable parts of demos.
-- Hot-reload for script and assets.
-- glTF or Collada support with animations.
-- DRY API to provide uniforms to shaders.
-- Multi-platform support: Windows, OSX, Linux and maybe web.
+Features:
 
-## Requirements
+- glTF support
+- Multiple lightning models:
+    - [Physically based rendering](https://en.wikipedia.org/wiki/Physically_based_rendering) (roughness-metallic)
+    - Phong shading with and without normal maps
+- Multi-platform support: Both **Windows** and **macOS**
+- Own script language (BoenthoeScript a.k.a. bäsä) for simple scripting
+- Hot-reload for script and assets (temporarily disabled).
+
+Future steps:
+
+- Ambient occlusion for PBR
+- glTF animation support
+- Particles
+- Standard library of post-processing effects
+- Linux support
+- Killer demos
+
+Maybe:
+
+- Web support
+
+## Setup
 
 - [Rust and Cargo](https://rustup.rs/)
+- On Windows: [Visual Studio 2019](https://visualstudio.microsoft.com/vs/)
+- Nightly channel for experimental Rust feature `vec_into_raw_parts`: `rustup toolchain install nightly`
+- Shaderc library or required build tools. See https://github.com/google/shaderc-rs
 
 ## License
 
