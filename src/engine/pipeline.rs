@@ -67,7 +67,7 @@ pub fn build_pipeline<'a>(
                 None
             },
             vertex_state: wgpu::VertexStateDescriptor {
-                index_format: wgpu::IndexFormat::Uint16,
+                index_format: wgpu::IndexFormat::Uint32,
                 vertex_buffers: &descriptor.vertex_buffers,
             },
             sample_count: descriptor.sample_count,

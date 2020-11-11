@@ -61,7 +61,7 @@ const VERTICES: &[Vertex] = &[
     },
 ];
 
-const INDICES: &[u16] = &[0, 1, 3, 3, 2, 0];
+const INDICES: &[u32] = &[0, 1, 3, 3, 2, 0];
 
 impl Simple {
     pub fn new(engine: &Engine) -> Result<Self, EngineError> {
