@@ -92,7 +92,7 @@ vec4 lighting_model(
 #include "light_caster.glsl" // Import calculate_light()
 
 void main() {
-    vec4 result;
+    vec4 result = vec4(0.0);
     uint number_of_lights = min(uniforms.number_of_lights, MAX_NUMBER_OF_LIGHTS);
     for (int i = 0; i < number_of_lights; i++) {
         result += calculate_light(

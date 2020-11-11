@@ -157,16 +157,15 @@ impl Engine {
             .expect("Timeout getting a frame texture");
 
         let mut renderers = self.renderers.lock().unwrap();
-        let time = self.timer.elapsed();
-        for renderer in renderers.iter_mut() {
-            let mut context = renderer::RenderingContext {
-                device: &self.device,
-                queue: &mut self.queue,
-                output: &frame.output.view,
-                time,
-                screen_size: &self.size,
-            };
+        let mut context = renderer::RenderingContext {
+            device: &self.device,
+            queue: &mut self.queue,
+            output: &frame.output.view,
+            time: self.timer.elapsed(),
+            screen_size: &self.size,
+        };
 
+        for renderer in renderers.iter_mut() {
             if renderer.should_render(&context) {
                 renderer.update(&mut context);
                 renderer.render(&mut context);

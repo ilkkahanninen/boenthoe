@@ -27,8 +27,8 @@ struct Light {
     uint type; // 0 = off, 1 = directional, 2 = point, 3 = spotlight
 };
 
-layout(set=1, binding=0) buffer Lights {
-    Light lights[];
+layout(set=1, binding=0) uniform Lights {
+    Light lights[MAX_NUMBER_OF_LIGHTS];
 };
 
 // Textures

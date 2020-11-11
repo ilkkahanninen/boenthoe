@@ -26,7 +26,7 @@ impl<'a> RenderingContext<'a> {
     }
 
     pub fn submit(&self, encoder: wgpu::CommandEncoder) {
-        self.queue.submit(vec![encoder.finish()]);
+        self.queue.submit(std::iter::once(encoder.finish()));
     }
 }
 

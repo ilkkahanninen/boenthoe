@@ -115,8 +115,8 @@ pub fn color_state(
     let (color_blend, alpha_blend) = blend_mode.get_descriptors();
     vec![wgpu::ColorStateDescriptor {
         format,
-        color_blend: color_blend,
-        alpha_blend: alpha_blend,
+        color_blend,
+        alpha_blend,
         write_mask: wgpu::ColorWrite::ALL,
     }]
 }

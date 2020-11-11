@@ -1,4 +1,4 @@
-use super::{data::InitData, Matrix4, ModelRenderContext, ModelRenderData};
+use super::{data::InitData, LightsArray, Matrix4, ModelRenderContext, ModelRenderData};
 use crate::engine::prelude::*;
 use gltf::mesh::Mode;
 use wgpu::util::DeviceExt;
@@ -52,7 +52,7 @@ impl Primitive {
         // Uniforms
         let uniforms_storage = UniformBuffer::default(&engine.device, "gltf::Uniforms");
         let light_layout =
-            StorageBuffer::<LightBufferObject>::create_layout(&engine.device, "gltf::Lights");
+            UniformBuffer::<LightsArray>::create_layout(&engine.device, "gltf::Lights");
         let bind_group_layouts = [
             uniforms_storage.get_layout(),
             &light_layout,
@@ -95,11 +95,8 @@ impl Primitive {
 
     pub fn render(&self, context: &mut ModelRenderContext, data: &ModelRenderData) {
         // Update uniforms buffer
-        self.uniforms_storage.copy_to_gpu(
-            context.encoder,
-            context.queue,
-            &Uniforms::new(data, &self.material),
-        );
+        self.uniforms_storage
+            .copy_to_gpu(context.queue, &Uniforms::new(data, &self.material));
 
         // Render
         let mut render_pass = context.begin_draw();
