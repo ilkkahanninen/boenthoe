@@ -19,7 +19,7 @@ impl TestEffect {
             engine,
             &engine.load_asset(&Path::new("assets/WaterBottle.glb")),
             &model::ModelProperties {
-                rendering_mode: model::RenderingMode::Phong,
+                rendering_mode: model::RenderingMode::PhysicalBasedRendering,
                 ..Default::default()
             },
         )?;
