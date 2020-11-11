@@ -7,10 +7,12 @@ use super::{Model, ModelProperties, ModelRenderContext, RenderingMode};
 use crate::engine::{camera::Camera, prelude::*};
 use node::Node;
 
+pub const MAX_NUMBER_OF_LIGHTS: usize = 8;
+pub type LightsArray = [LightBufferObject; MAX_NUMBER_OF_LIGHTS];
 pub struct GltfModel {
     nodes: Vec<Node>,
     lights: Vec<Light>,
-    lights_buffer: StorageBuffer<LightBufferObject>,
+    lights_buffer: UniformBuffer<LightsArray>,
     camera: Camera,
 }
 
@@ -24,16 +26,21 @@ pub struct ModelRenderData<'a> {
 
 impl Model for GltfModel {
     fn render(&self, context: &mut ModelRenderContext) {
-        let light_buffer_objects: Vec<LightBufferObject> = self
+        let mut light_buffer_objects = [LightBufferObject::default(); MAX_NUMBER_OF_LIGHTS];
+        let visible_lights: Vec<&Light> = self
             .lights
             .iter()
             .filter(|light| light.is_lit())
-            .map(LightBufferObject::from)
+            .take(MAX_NUMBER_OF_LIGHTS)
             .collect();
+
+        for (index, light) in visible_lights.iter().enumerate() {
+            light_buffer_objects[index] = LightBufferObject::from(*light)
+        }
 
         if light_buffer_objects.len() > 0 {
             self.lights_buffer
-                .copy_to_gpu(context.encoder, context.queue, &light_buffer_objects);
+                .copy_to_gpu(context.queue, &light_buffer_objects);
         }
 
         let data = ModelRenderData {
@@ -41,7 +48,7 @@ impl Model for GltfModel {
             eye_position: &self.camera.eye,
             model_matrix: &cgmath::SquareMatrix::identity(),
             lights: self.lights_buffer.get_bind_group(),
-            number_of_lights: light_buffer_objects.len() as u32,
+            number_of_lights: visible_lights.len() as u32,
         };
 
         for node in self.nodes.iter() {
@@ -82,7 +89,7 @@ impl GltfModel {
                 .map(|node| Node::new(engine, &node, &data))
                 .collect(),
             lights: Vec::new(),
-            lights_buffer: StorageBuffer::new(&engine.device, 16, "gltf::Lights"),
+            lights_buffer: UniformBuffer::new(&engine.device, "gltf::Lights"),
             camera,
         })
     }

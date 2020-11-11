@@ -87,6 +87,7 @@ impl<T> Object for UniformBuffer<T> {
     }
 }
 
+/*
 pub struct StorageBuffer<T> {
     label: String,
     buffer: wgpu::Buffer,
@@ -191,3 +192,4 @@ impl<T> Object for StorageBuffer<T> {
         &self.bind_group_layout
     }
 }
+*/
